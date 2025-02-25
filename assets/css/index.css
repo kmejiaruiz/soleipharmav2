@@ -1,0 +1,38 @@
+.splide__slide {
+  position: relative;
+}
+.splide__slide img {
+  width: 100%;
+  height: 16rem; /* Altura base para móviles */
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Ajuste para pantallas más grandes */
+@media (min-width: 1024px) {
+  /* Laptops y superiores */
+  .splide__slide img {
+    height: 90vh; /* 70% de la altura de la pantalla */
+    max-height: 600px; /* Máximo de 600px para evitar imágenes muy grandes */
+  }
+}
+
+.carousel-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: #fff;
+  padding: 1rem;
+}
+/* Paginación con Tailwind */
+.pagination li a {
+  @apply px-4 py-2 border border-gray-300 rounded text-indigo-600 transition-colors duration-200;
+}
+.pagination li a:hover {
+  @apply bg-indigo-100;
+}
+.pagination li.active a {
+  @apply bg-indigo-600 text-white border-indigo-600;
+}
