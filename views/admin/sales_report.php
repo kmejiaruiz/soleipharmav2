@@ -14,7 +14,7 @@
             </div>
             <div class="card-body">
                 <?php if($hasData): ?>
-                <div style="max-width: 100%; height: 180px;">
+                <div style="max-width: 100%; height: 100%;">
                     <canvas id="salesBarChart"></canvas>
                 </div>
                 <?php else: ?>

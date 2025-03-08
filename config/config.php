@@ -6,7 +6,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 
 // Información de la empresa para el recibo
-define('COMPANY_NAME', 'Farmacia Solei.');
+define('COMPANY_NAME', 'Farmacia Solei');
 define('BRANCH', 'Sucursal Leon');
 
 define('LOW_STOCK_THRESHOLD', 9);

@@ -110,8 +110,7 @@ document.getElementById('increaseStockForm').addEventListener('submit', function
                                    <p>Stock anterior: ${receipt.previous_stock}</p>
                                    <p>Aumentado en: ${receipt.additional_stock}</p>
                                    <p>Nuevo stock: ${receipt.new_stock}</p>
-                                   <p>Aplicado por: ${receipt.admin_aplica}</p>
-                                   <p>Autorizado por: ${receipt.admin_autoriza}</p>
+                                   <p>Usuario aplica: ${receipt.admin_aplica}</p>
                                    <p>Fecha: ${receipt.date}</p>
                                    <p>${receipt.company} - ${receipt.branch}</p>`,
                             icon: 'success',
@@ -137,14 +136,13 @@ document.getElementById('increaseStockForm').addEventListener('submit', function
                                         <p>Aumentado en: ${receipt.additional_stock}</p>
                                         <p>Nuevo stock: ${receipt.new_stock}</p>
                                         <p>Aplicado por: ${receipt.admin_aplica}</p>
-                                        <p>Autorizado por: ${receipt.admin_autoriza}</p>
                                         <p>Fecha: ${receipt.date}</p>
                                         <p>${receipt.company} - ${receipt.branch}</p>
                                     </body>
                                     </html>
                                 `;
                                 var printWindow = window.open('', '',
-                                    'height=600,width=800');
+                                    'height=600,width=400');
                                 printWindow.document.write(printContent);
                                 printWindow.document.close();
                                 printWindow.focus();

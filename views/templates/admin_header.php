@@ -98,9 +98,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="index.php?controller=admin&action=creditDebitNotes" class="nav-link">
+                            <a href="index.php?controller=notes&action=index" class="nav-link">
                                 <i class="nav-icon fas fa-sticky-note"></i>
-                                <p>Notas Crédito/Débito</p>
+                                <p>Notas de Crédito/Débito</p>
                             </a>
                         </li>
                         <li class="nav-item">

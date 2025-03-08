@@ -2,9 +2,9 @@
   <!-- /.content-wrapper -->
   <footer class="main-footer" style="background-color: #4B0082; color: #fff;">
     <div class="float-right d-none d-sm-block">
-      <b>Version</b> 1.0
+      <b>Version</b> 1.109
     </div>
-    <strong>&copy; <?= date('Y') ?> Mi Tienda Online.</strong> Todos los derechos reservados.
+    <strong>&copy; <?= date('Y') ?> <?= COMPANY_NAME    ?></strong> <?= BRANCH ?>
   </footer>
 </div>
 <!-- ./wrapper -->

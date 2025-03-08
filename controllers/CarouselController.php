@@ -12,8 +12,8 @@ class CarouselController extends AdminController {
               session_start();
          }
          // Solo administradores pueden acceder a la gestión del carousel
-         if(!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin'){
-              die("Acceso denegado.");
+         if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'superadmin')) {
+          die("Acceso denegado.");
          }
          global $pdo;
          $this->carouselModel = new Carousel($pdo);

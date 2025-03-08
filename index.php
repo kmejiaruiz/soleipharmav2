@@ -7,7 +7,7 @@ require_once 'config/config.php';
 
 // Determinar controlador y acción según la URL
 $controller = isset($_GET['controller']) ? $_GET['controller'] : 'product';
-$action     = isset($_GET['action']) ? $_GET['action'] : 'index';
+$action = isset($_GET['action']) ? $_GET['action'] : 'index';
 
 // Mapear el nombre del controlador a su archivo y clase
 $controllerName = ucfirst($controller) . 'Controller';
@@ -23,7 +23,10 @@ if (file_exists($controllerFile)) {
             $obj->$action();
         }
     } else {
-        die("La acción no existe.");
+        ?>
+        <a href="index.php" role="/button>">Regresar</a>
+        <?php
+        die("No hay nada por aqui");
     }
 } else {
     die("El controlador no existe.");

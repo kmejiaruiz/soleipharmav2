@@ -24,9 +24,9 @@ if (session_status() === PHP_SESSION_NONE) {
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-    [x-cloak] {
-        display: none !important;
-    }
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -64,23 +64,23 @@ if (session_status() === PHP_SESSION_NONE) {
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Productos</button>
                         <button onclick="location.href='index.php?controller=cart&action=view'"
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Carrito</button>
-                        <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
-                        <button onclick="location.href='index.php?controller=admin&action=index'"
-                            class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Panel
-                            Admin</button>
+                        <?php if (isset($_SESSION['user']) && ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'superadmin')): ?>
+                            <button onclick="location.href='index.php?controller=admin&action=index'"
+                                class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Panel
+                                Admin</button>
                         <?php endif; ?>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <?php if(isset($_SESSION['user'])): ?>
-                    <span class="text-white">Hola, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
-                    <a href="index.php?controller=auth&action=logout"
-                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Cerrar sesión</a>
+                    <?php if (isset($_SESSION['user'])): ?>
+                        <span class="text-white">Hola, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                        <a href="index.php?controller=auth&action=logout"
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Cerrar sesión</a>
                     <?php else: ?>
-                    <button @click="openLogin = true"
-                        class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Iniciar sesión</button>
-                    <button @click="openRegister = true"
-                        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Registrarse</button>
+                        <button @click="openLogin = true"
+                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Iniciar sesión</button>
+                        <button @click="openRegister = true"
+                            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Registrarse</button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -88,21 +88,21 @@ if (session_status() === PHP_SESSION_NONE) {
     </nav>
 
     <!-- Toast de notificación (ver bloque anterior) -->
-    <?php if(isset($_SESSION['flash'])): ?>
-    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-        class="fixed top-4 right-4 bg-purple-700 text-white px-4 py-2 rounded shadow space-y-2">
-        <div><?= $_SESSION['flash']; ?></div>
-        <?php if(isset($_SESSION['flash_type']) && $_SESSION['flash_type'] === 'cart'): ?>
-        <div class="flex space-x-2">
-            <a href="index.php?controller=cart&action=view"
-                class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">Ver Carrito</a>
-            <button @click="show = false" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Continuar</button>
+    <?php if (isset($_SESSION['flash'])): ?>
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+            class="fixed top-4 right-4 bg-purple-700 text-white px-4 py-2 rounded shadow space-y-2">
+            <div><?= $_SESSION['flash']; ?></div>
+            <?php if (isset($_SESSION['flash_type']) && $_SESSION['flash_type'] === 'cart'): ?>
+                <div class="flex space-x-2">
+                    <a href="index.php?controller=cart&action=view"
+                        class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">Ver Carrito</a>
+                    <button @click="show = false" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Continuar</button>
+                </div>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
-    </div>
-    <?php 
-    unset($_SESSION['flash']);
-    unset($_SESSION['flash_type']);
+        <?php
+        unset($_SESSION['flash']);
+        unset($_SESSION['flash_type']);
     endif;
     ?>
 
