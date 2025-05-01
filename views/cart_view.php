@@ -39,7 +39,7 @@
             <div class="text-right">
                 <p class="text-xl font-semibold text-black">Total a pagar: $<?= number_format($grandTotal, 2) ?></p>
                 <div class="mt-4">
-                    <a href="index.php?controller=order&action=checkout"
+                    <a href="index.php?controller=cart&action=checkout"
                         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                         Realizar Compra
                     </a>

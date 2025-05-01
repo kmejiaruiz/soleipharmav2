@@ -1,11 +1,11 @@
 </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer" style="background-color: #4B0082; color: #fff;">
-    <div class="float-right d-none d-sm-block">
-      <b>Version</b> 1.109
-    </div>
-    <strong>&copy; <?= date('Y') ?> <?= COMPANY_NAME    ?></strong> <?= BRANCH ?>
-  </footer>
+<!-- /.content-wrapper -->
+<footer class="main-footer" style="background-color: #4B0082; color: #fff;">
+  <div class="float-right d-none d-sm-block">
+    <b>Version</b> 1.109
+  </div>
+  <strong>&copy; <?= date('Y') ?> <?= COMPANY_NAME ?></strong> <?= BRANCH ?>
+</footer>
 </div>
 <!-- ./wrapper -->
 
@@ -18,11 +18,27 @@
 <!-- Scripts personalizados -->
 <script src="assets/js/main.js"></script>
 <script>
- $(window).on('load', function() {
-      $('#loading-wrapper').slideUp(250, function(){
-          $(this).remove();
-      });
-  });
+  (function () {
+    const wrapper = document.getElementById('loading-wrapper');
+
+    if (sessionStorage.getItem('appLoaded')) {
+      wrapper.style.opacity = '0';
+      wrapper.style.visibility = 'hidden';
+      return;
+    }
+    sessionStorage.setItem('appLoaded', 'true');
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        wrapper.style.opacity = '0';
+        wrapper.style.transform = 'translateY(-20px)';
+        setTimeout(() => wrapper.style.visibility = 'hidden', 500);
+      }, 500);
+    });
+  })();
 </script>
+
+
 </body>
+
 </html>

@@ -17,24 +17,56 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.1/dist/css/adminlte.min.css">
     <!-- Estilos personalizados (opcional) -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/loader.css">
+
 </head>
 
 <body class="hold-transition sidebar-mini">
-    <!-- Loading Wrapper -->
+
+    <!-- Loader Overlay (al inicio de <body>) -->
     <div id="loading-wrapper" style="
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index:9999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:1; visibility:visible;
+    transition: opacity .5s ease, visibility .5s ease, transform .5s ease;
+">
+        <div style="
+      position: relative;
       background: #fff;
-      z-index: 9999;
+      padding: 30px;
+      width: 260px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease-out;">
-        <div style="font-size: 24px; color: #000;">
-            <i class="fas fa-spinner fa-spin"></i> Cargando...
+      overflow: hidden;
+  ">
+            <!-- Spinner -->
+            <div class="lds-spinner">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div style="margin-top: 15px; font-size: 14px; color: #333;">Procesando datos...</div>
         </div>
     </div>
+
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-dark" style="background-color: #4B0082;">
@@ -48,7 +80,11 @@
             </ul>
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <span class="nav-link">Bienvenido, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                    <span class="nav-link">Bienvenido, <?= htmlspecialchars(
+                        $_SESSION['user']['first_name'] . ' ' .
+                        $_SESSION['user']['last_name'] . ' ' .
+                        $_SESSION['user']['second_surname']
+                    ) ?></span>
                 </li>
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
@@ -104,11 +140,48 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="index.php?controller=admin&action=bulkUpload" class="nav-link">
-                                <i class="nav-icon fas fa-file-excel"></i>
-                                <p>Carga Masiva de Productos</p>
+                            <a href="index.php?controller=order&action=create" class="nav-link">
+                                <i class="nav-icon fas fa-shopping-cart"></i>
+                                <p>Realizar Pedido</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                                <a href="index.php?controller=discard&action=create" class="nav-link">
+                                    <i class="nav-icon fas fa-trash-alt"></i>
+                                    <p>Solicitar Descarte</p>
+                                </a>
+                            <?php endif; ?>
+                        </li>
+                        <li class="nav-item">
+                            <?php if ($_SESSION['user']['role'] === 'superadmin'): ?>
+                                <a href="index.php?controller=discard&action=listPending" class="nav-link">
+                                    <i class="nav-icon fas fa-hourglass-half"></i>
+                                    <p>Solicitudes Pendientes</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="index.php?controller=discard&action=history" class="nav-link">
+                                    <i class="nav-icon fas fa-history"></i>
+                                    <p>Historial de Descartes</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <li class="nav-item">
+                            <a href="index.php?controller=order&action=index" class="nav-link">
+                                <i class="nav-icon fas fa-shopping-cart"></i>
+                                <p>Pedidos de Productos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?controller=order&action=goodsEntry&id=<?= $_GET['id'] ?? '' ?>"
+                                class="nav-link">
+                                <i class="nav-icon fas fa-truck-loading"></i>
+                                <p>Entrada de Mercadería</p>
+                            </a>
+                        </li>
+
                         <li class="nav-item">
                             <a href="index.php?controller=carousel&action=index" class="nav-link">
                                 <i class="nav-icon fas fa-images"></i>

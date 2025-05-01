@@ -73,7 +73,12 @@ if (session_status() === PHP_SESSION_NONE) {
                 </div>
                 <div class="flex items-center space-x-4">
                     <?php if (isset($_SESSION['user'])): ?>
-                        <span class="text-white">Hola, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                        <!-- recuperamos los campos para darle la bienvenida a el usuario logueado -->
+                        <span class="text-white">Hola, <?= htmlspecialchars(
+                            $_SESSION['user']['first_name'] . ' ' .
+                            $_SESSION['user']['last_name'] . ' ' .
+                            $_SESSION['user']['second_surname']
+                        ) ?></span>
                         <a href="index.php?controller=auth&action=logout"
                             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Cerrar sesión</a>
                     <?php else: ?>

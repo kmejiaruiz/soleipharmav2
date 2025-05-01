@@ -71,6 +71,7 @@ document.getElementById('increaseStockForm').addEventListener('submit', function
         title: 'Confirmar Actualización de Stock',
         html: `<p>Stock actual: <strong>${currentStock}</strong></p>
                <p>Aumentar en: <strong>${additionalStock}</strong> unidades</p>
+               <p class='alert alert-info'>Esta accion solo la pueden realizar los superadmin.</p>
                <p>Ingrese sus credenciales para confirmar:</p>
                <input type="text" id="swal-input-username" class="swal2-input" placeholder="Usuario">
                <input type="password" id="swal-input-password" class="swal2-input" placeholder="Contraseña">`,
@@ -142,7 +143,7 @@ document.getElementById('increaseStockForm').addEventListener('submit', function
                                     </html>
                                 `;
                                 var printWindow = window.open('', '',
-                                    'height=600,width=400');
+                                    'height=800,width=800');
                                 printWindow.document.write(printContent);
                                 printWindow.document.close();
                                 printWindow.focus();

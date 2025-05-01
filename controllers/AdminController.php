@@ -106,24 +106,6 @@ class AdminController extends BaseController
     // }
 
     // Carga masiva de productos mediante Excel
-    public function bulkUpload()
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Procesa el archivo Excel
-            // Por ejemplo, usando PhpSpreadsheet:
-            // require 'vendor/autoload.php';
-            // $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($_FILES['excel']['tmp_name']);
-            // $spreadsheet = $reader->load($_FILES['excel']['tmp_name']);
-            // Procesa cada fila y agrega productos
-            $message = "Productos importados correctamente.";
-            $_SESSION['flash'] = $message;
-            $_SESSION['flash_type'] = "success";
-            header("Location: index.php?controller=admin&action=index");
-            exit;
-        } else {
-            $this->renderAdmin('admin/bulk_upload');
-        }
-    }
 
     // Función auxiliar para renderizar vistas administrativas usando el layout de admin
     protected function renderAdmin($view, $data = [])
@@ -229,7 +211,7 @@ class AdminController extends BaseController
         $stmtAdmin = $pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmtAdmin->execute([$confirmUsername]);
         $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || $adminData['role'] != 'admin') {
+        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || $adminData['role'] != 'admin' && $adminData['role'] != 'superadmin') {
             echo json_encode(['success' => false, 'message' => "Credenciales incorrectas o sin permisos de administrador."]);
             exit;
         }
@@ -362,10 +344,12 @@ class AdminController extends BaseController
         $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
 
         // Validar credenciales: si no se encuentra el usuario, o la contraseña no coincide, o el usuario no es admin, abortar
-        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || $adminData['role'] != 'admin') {
+        // in_array($adminData['role'], ['admin', 'superadmin']) verifica si el rol es admin o superadmin.
+        // Ahora, con !in_array(...), se permite el acceso si el usuario tiene cualquiera de los dos roles.
+        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || !in_array($adminData['role'], ['superadmin'])) {
             $response = [
                 'success' => false,
-                'message' => "Credenciales incorrectas o no tienes permisos de administrador. No se realizó la actualización."
+                'message' => "Credenciales incorrectas o no tienes permisos de superadmin. No se realizó la actualización."
             ];
             echo json_encode($response);
             exit;
