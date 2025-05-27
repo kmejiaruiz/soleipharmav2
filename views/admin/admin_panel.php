@@ -55,15 +55,15 @@
                 <div class="col-lg-4 col-12">
                     <div class="small-box" style="background-color: #007bff; color: #fff;">
                         <div class="inner">
-                            <?php if(!empty($topProducts)): 
-          $topProduct = $topProducts[0];
-        ?>
-                            <!-- <h3><?= $topProduct['name'] ?> <sup
+                            <?php if (!empty($topProducts)):
+                                $topProduct = $topProducts[0];
+                                ?>
+                                <!-- <h3><?= $topProduct['name'] ?> <sup
                                     style="font-size: 20px"><?= $topProduct['total_quantity'] ?> uds</sup></h3> -->
-                            <p>Top 10 Productos Más Vendidos</p>
+                                <p>Top 10 Productos Más Vendidos</p>
                             <?php else: ?>
-                            <h3>0</h3>
-                            <p>No hay datos</p>
+                                <h3>0</h3>
+                                <p>No hay datos</p>
                             <?php endif; ?>
                         </div>
                         <div class="icon">
@@ -102,36 +102,36 @@
                         Producto</a>
                 </div>
             </div>
-            <div class="card-body table-responsive">
-                <table class="table table-striped">
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Nombre</th>
-                            <th>Precio</th>
+                            <th>Costo</th>
+                            <th>Precio Venta</th>
                             <th>Stock</th>
                             <th>Disponible</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-        global $pdo;
-        $stmt = $pdo->query("SELECT * FROM products");
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($products as $product):
-        ?>
-                        <tr>
-                            <td><?= $product['id'] ?></td>
-                            <td><?= $product['name'] ?></td>
-                            <td><?= $product['price'] ?></td>
-                            <td><?= $product['stock'] ?></td>
-                            <td><?= $product['available'] ? 'Sí' : 'No' ?></td>
-                            <td>
-                                <a href="index.php?controller=admin&action=editProduct&id=<?= $product['id'] ?>"
-                                    class="btn btn-primary btn-sm">Editar</a>
-                            </td>
-                        </tr>
+                        <?php global $pdo;
+                        $stmt = $pdo->query("SELECT * FROM products");
+                        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($products as $p): ?>
+                            <tr>
+                                <td><?= $p['id'] ?></td>
+                                <td><?= htmlspecialchars($p['name']) ?></td>
+                                <td>$<?= number_format($p['cost'], 2) ?></td>
+                                <td>$<?= number_format($p['sale_price'], 2) ?></td>
+                                <td><?= (int) $p['stock'] ?></td>
+                                <td><?= $p['available'] ? 'Sí' : 'No' ?></td>
+                                <td>
+                                    <a href="index.php?controller=admin&action=editProduct&id=<?= $p['id'] ?>"
+                                        class="btn btn-sm btn-primary">Editar</a>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>

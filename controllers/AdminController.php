@@ -28,38 +28,46 @@ class AdminController extends BaseController
     // Dashboard principal del admin (con AdminLTE)
     public function index()
     {
-
         global $pdo;
         // Ventas del día
-        $stmtSales = $pdo->prepare("SELECT SUM(total) AS total_sales FROM orders WHERE DATE(created_at) = CURDATE() AND status = 'completado'");
+        $stmtSales = $pdo->prepare(
+            "SELECT SUM(total) AS total_sales 
+             FROM orders 
+             WHERE DATE(created_at)=CURDATE() AND status='completado'"
+        );
         $stmtSales->execute();
-        $dailySalesData = $stmtSales->fetch(PDO::FETCH_ASSOC);
-        $dailySales = $dailySalesData['total_sales'] ?? 0;
+        $dailySales = $stmtSales->fetchColumn() ?: 0;
 
         // Top 10 productos más vendidos
-        $stmtTop = $pdo->query("SELECT p.id, p.name, SUM(oi.quantity) AS total_quantity 
-                                 FROM order_items oi 
-                                 JOIN products p ON oi.product_id = p.id 
-                                 GROUP BY p.id 
-                                 ORDER BY total_quantity DESC 
-                                 LIMIT 10");
-        $topProducts = $stmtTop->fetchAll(PDO::FETCH_ASSOC);
+        $topProducts = $pdo->query(
+            "SELECT p.id,p.name,SUM(oi.quantity) AS total_quantity 
+             FROM order_items oi 
+             JOIN products p ON oi.product_id=p.id 
+             GROUP BY p.id 
+             ORDER BY total_quantity DESC 
+             LIMIT 10"
+        )->fetchAll(PDO::FETCH_ASSOC);
 
-        // Productos con bajo stock (definimos bajo stock como stock < 5)
-        $lowStockThreshold = 5;
-        $stmtLow = $pdo->prepare("SELECT id, name, stock FROM products WHERE stock < ?");
-        $stmtLow->execute([$lowStockThreshold]);
-        $lowStockProducts = $stmtLow->fetchAll(PDO::FETCH_ASSOC);
+        // Productos con bajo stock
+        $lowStockProducts = $pdo->prepare(
+            "SELECT id,name,stock FROM products WHERE stock<5"
+        );
+        $lowStockProducts->execute();
+        $lowStockProducts = $lowStockProducts->fetchAll(PDO::FETCH_ASSOC);
+
+        // *** Productos para el panel (evita Undefined $products) ***
+        $products = $pdo->query(
+            "SELECT id,name,cost,sale_price,stock,available 
+             FROM products"
+        )->fetchAll(PDO::FETCH_ASSOC);
 
         $this->renderAdmin('admin/admin_panel', [
             'dailySales' => $dailySales,
             'topProducts' => $topProducts,
-            'lowStockProducts' => $lowStockProducts
+            'lowStockProducts' => $lowStockProducts,
+            'products' => $products
         ]);
-
-
     }
-
 
     // Reporte de ventas
     public function salesReport()
@@ -125,45 +133,70 @@ class AdminController extends BaseController
     public function saveProduct()
     {
         global $pdo;
-        $name = $_POST['name'];
-        $description = $_POST['description'];
-        $price = $_POST['price'];
-        $stock = $_POST['stock'];
-        $image = $_POST['image'] ?? '';
+        // Campos básicos
+        $name = trim($_POST['name']);
+        $description = trim($_POST['description']);
+        $stock = intval($_POST['stock']);
+        $image = trim($_POST['image'] ?? '');
         $available = isset($_POST['available']) ? 1 : 0;
-        $reason_unavailable = $_POST['reason_unavailable'] ?? null;
+        $reason = trim($_POST['reason_unavailable'] ?? null);
 
-        // Validar credenciales
-        $confirmUsername = trim($_POST['confirm_username'] ?? '');
-        $confirmPassword = trim($_POST['confirm_password'] ?? '');
-        if (empty($confirmUsername) || empty($confirmPassword)) {
-            echo json_encode(['success' => false, 'message' => "Se requieren credenciales de administrador."]);
+        // Nuevos campos de cost y tasas
+        $cost = floatval($_POST['cost'] ?? 0.00);
+        $utility = floatval($_POST['utility_percent'] ?? 0.00);
+        $tax = floatval($_POST['tax_percent'] ?? 0.00);
+        // Calcular sale_price
+        $sale_price = round($cost * (1 + $utility / 100) * (1 + $tax / 100), 2);
+
+        // Validar credenciales de admin
+        $cu = trim($_POST['confirm_username'] ?? '');
+        $cp = trim($_POST['confirm_password'] ?? '');
+        if (!$cu || !$cp) {
+            echo json_encode(['success' => false, 'message' => 'Se requieren credenciales.']);
             exit;
         }
-        $stmtAdmin = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-        $stmtAdmin->execute([$confirmUsername]);
-        $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || $adminData['role'] != 'admin') {
-            echo json_encode(['success' => false, 'message' => "Credenciales incorrectas o sin permisos de administrador."]);
+        $admin = $pdo->prepare("SELECT * FROM users WHERE username=?");
+        $admin->execute([$cu]);
+        $a = $admin->fetch(PDO::FETCH_ASSOC);
+        if (!$a || !password_verify($cp, $a['password']) || $a['role'] !== 'admin') {
+            echo json_encode(['success' => false, 'message' => 'Credenciales inválidas.']);
             exit;
         }
 
-        // Validar si el producto ya existe
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE name = ?");
-        $stmt->execute([$name]);
-        if ($stmt->rowCount() > 0) {
-            echo json_encode(['success' => false, 'message' => "El producto ya existe."]);
+        // Verificar duplicado
+        $dup = $pdo->prepare("SELECT id FROM products WHERE name=?");
+        $dup->execute([$name]);
+        if ($dup->rowCount()) {
+            echo json_encode(['success' => false, 'message' => 'El producto ya existe.']);
             exit;
         }
 
-        $stmtInsert = $pdo->prepare("INSERT INTO products (name, description, price, stock, image, available, reason_unavailable) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        if ($stmtInsert->execute([$name, $description, $price, $stock, $image, $available, $reason_unavailable])) {
-            echo json_encode(['success' => true, 'message' => "Producto agregado correctamente."]);
-        } else {
-            echo json_encode(['success' => false, 'message' => "Error al agregar el producto."]);
-        }
+        // Insertar incluyendo cost y sale_price
+        $ins = $pdo->prepare(
+            "INSERT INTO products 
+              (name,description,cost,utility_percent,tax_percent,sale_price,stock,image,available,reason_unavailable)
+             VALUES (?,?,?,?,?,?,?,?,?,?)"
+        );
+        $ok = $ins->execute([
+            $name,
+            $description,
+            $cost,
+            $utility,
+            $tax,
+            $sale_price,
+            $stock,
+            $image,
+            $available,
+            $reason
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $ok,
+            'message' => $ok ? 'Producto agregado correctamente.' : 'Error al agregar producto.'
+        ]);
         exit;
     }
+
 
     public function editProduct($id)
     {
@@ -183,95 +216,90 @@ class AdminController extends BaseController
     public function updateProduct($id)
     {
         global $pdo;
-        // Obtener los datos antiguos del producto para loggear cambios
-        $stmtOld = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $stmtOld->execute([$id]);
-        $oldProduct = $stmtOld->fetch(PDO::FETCH_ASSOC);
-        if (!$oldProduct) {
-            echo json_encode(['success' => false, 'message' => "Producto no encontrado."]);
-            exit;
-        }
+        // Obtener producto actual para valores por defecto
+        $stmtProd = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+        $stmtProd->execute([$id]);
+        $product = $stmtProd->fetch(PDO::FETCH_ASSOC);
 
-        // Recibir nuevos datos desde POST
-        $name = $_POST['name'];
-        $description = $_POST['description'];
-        $price = $_POST['price'];
-        $stock = $_POST['stock'];
-        $image = $_POST['image'] ?? '';
+        // Recoger datos del formulario o usar valores actuales
+        $name = trim($_POST['name'] ?? $product['name']);
+        $description = trim($_POST['description'] ?? $product['description']);
+        $stock = intval($_POST['stock'] ?? $product['stock']);
+        $image = trim($_POST['image'] ?? $product['image']);
         $available = isset($_POST['available']) ? 1 : 0;
-        $reason_unavailable = $_POST['reason_unavailable'] ?? null;
+        $reason_unavailable = trim($_POST['reason_unavailable'] ?? $product['reason_unavailable']);
 
-        // Validar credenciales de administrador
+        // Solo Superadmin puede editar costos e impuestos
+        $cost = isset($_POST['cost']) ? floatval($_POST['cost']) : floatval($product['cost']);
+        $utility = isset($_POST['utility_percent']) ? floatval($_POST['utility_percent']) : floatval($product['utility_percent']);
+        $tax = isset($_POST['tax_percent']) ? floatval($_POST['tax_percent']) : floatval($product['tax_percent']);
+
+        // Calcular precio de venta
+        $sale_price = round($cost * (1 + $utility / 100), 2);
+
+        // Credenciales para permisos
         $confirmUsername = trim($_POST['confirm_username'] ?? '');
         $confirmPassword = trim($_POST['confirm_password'] ?? '');
         if (empty($confirmUsername) || empty($confirmPassword)) {
-            echo json_encode(['success' => false, 'message' => "Se requieren credenciales de administrador."]);
+            echo json_encode(['success' => false, 'message' => 'Se requieren credenciales de administrador.']);
             exit;
         }
+        // Validar usuario y rol
         $stmtAdmin = $pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmtAdmin->execute([$confirmUsername]);
         $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || $adminData['role'] != 'admin' && $adminData['role'] != 'superadmin') {
-            echo json_encode(['success' => false, 'message' => "Credenciales incorrectas o sin permisos de administrador."]);
+        if (
+            !$adminData || !password_verify($confirmPassword, $adminData['password'])
+            || !in_array($adminData['role'], ['superadmin'])
+        ) {
+            echo json_encode(['success' => false, 'message' => 'Credenciales incorrectas o sin permisos de superadmin.']);
             exit;
         }
 
         // Actualizar producto
-        $stmtUpdate = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, image = ?, available = ?, reason_unavailable = ? WHERE id = ?");
-        if ($stmtUpdate->execute([$name, $description, $price, $stock, $image, $available, $reason_unavailable, $id])) {
+        $stmtUpdate = $pdo->prepare(
+            "UPDATE products SET 
+                name = ?,
+                description = ?,
+                cost = ?,
+                utility_percent = ?,
+                tax_percent = ?,
+                sale_price = ?,
+                stock = ?,
+                image = ?,
+                available = ?,
+                reason_unavailable = ?
+             WHERE id = ?"
+        );
+        $success = $stmtUpdate->execute([
+            $name,
+            $description,
+            $cost,
+            $utility,
+            $tax,
+            $sale_price,
+            $stock,
+            $image,
+            $available,
+            $reason_unavailable,
+            $id
+        ]);
 
-            // Construir la descripción de los cambios comparando valores antiguos y nuevos
-            $changes = [];
-            if ($oldProduct['name'] != $name) {
-                $changes[] = "Nombre: '{$oldProduct['name']}' a '{$name}'";
-            }
-            if ($oldProduct['description'] != $description) {
-                $changes[] = "Descripción: '{$oldProduct['description']}' a '{$description}'";
-            }
-            if ($oldProduct['price'] != $price) {
-                $changes[] = "Precio: '{$oldProduct['price']}' a '{$price}'";
-            }
-            if ($oldProduct['stock'] != $stock) {
-                $changes[] = "Stock: '{$oldProduct['stock']}' a '{$stock}'";
-            }
-            if ($oldProduct['image'] != $image) {
-                $changes[] = "Imagen: '{$oldProduct['image']}' a '{$image}'";
-            }
-            if ($oldProduct['available'] != $available) {
-                $oldAvail = $oldProduct['available'] ? 'Sí' : 'No';
-                $newAvail = $available ? 'Sí' : 'No';
-                $changes[] = "Disponible: '{$oldAvail}' a '{$newAvail}'";
-            }
-            if ($oldProduct['reason_unavailable'] != $reason_unavailable) {
-                $oldReason = $oldProduct['reason_unavailable'] ?? 'Ninguno';
-                $newReason = $reason_unavailable ?? 'Ninguno';
-                $changes[] = "Motivo de no disponibilidad: '{$oldReason}' a '{$newReason}'";
-            }
-
-            $editDescription = "Producto editado: " . (count($changes) ? implode(", ", $changes) : "Sin cambios detectados.");
-
-
-            // Insertar en la bd
-            $stmtLog = $pdo->prepare("INSERT INTO inventory_log (product_id, admin_id, admin_name, change_type, previous_stock, new_stock, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmtLog->execute([$id, $adminData['id'], $adminData['username'], 'edit', $oldProduct['stock'], $stock, $editDescription]);
-
-            echo json_encode(['success' => true, 'message' => "Producto actualizado correctamente."]);
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Producto actualizado correctamente.']);
         } else {
-            echo json_encode(['success' => false, 'message' => "Error al actualizar el producto."]);
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el producto.']);
         }
         exit;
     }
 
 
-
-
     public function inventory()
     {
         global $pdo;
-        $stmt = $pdo->query("SELECT * FROM products");
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $stmtLog = $pdo->query("SELECT * FROM inventory_log ORDER BY created_at DESC");
-        $logs = $stmtLog->fetchAll(PDO::FETCH_ASSOC);
+        $products = $pdo->query("SELECT * FROM products")->fetchAll(PDO::FETCH_ASSOC);
+        $logs = $pdo->query("SELECT * FROM inventory_log ORDER BY created_at DESC")
+            ->fetchAll(PDO::FETCH_ASSOC);
         $this->renderAdmin('admin/inventory', ['products' => $products, 'logs' => $logs]);
     }
 

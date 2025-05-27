@@ -1,6 +1,24 @@
+<!-- views/product_edit.php -->
+<?php if (session_status() === PHP_SESSION_NONE)
+    session_start(); ?>
+<h1>Editar Producto</h1>
 <form action="index.php?controller=product&action=update&id=<?= $product['id'] ?>" method="POST">
-    <!-- campos habituales: name, desc, stock -->
+    <div>
+        <label>Nombre:</label>
+        <input type="text" name="name" value="<?= htmlspecialchars($product['name']) ?>" required>
+    </div>
+    <div>
+        <label>Descripción:</label>
+        <textarea name="description"><?= htmlspecialchars($product['description']) ?></textarea>
+    </div>
+    <div>
+        <label>Stock:</label>
+        <input type="number" name="stock" value="<?= $product['stock'] ?>" required>
+    </div>
+
     <?php if ($_SESSION['user']['role'] === 'superadmin'): ?>
+        <hr>
+        <h2>Costos e Impuestos</h2>
         <div>
             <label>Costo Unitario:</label>
             <input type="number" step="0.01" name="cost" value="<?= $product['cost'] ?>" required>
@@ -13,7 +31,10 @@
             <label>% Impuesto:</label>
             <input type="number" step="0.01" name="tax_percent" value="<?= $product['tax_percent'] ?>" required>
         </div>
-        <p>Precio Venta: <strong><?= $product['sale_price'] ?></strong></p>
+        <div>
+            <strong>Precio Venta:</strong> <?= number_format($product['sale_price'], 2) ?>
+        </div>
     <?php endif; ?>
+
     <button type="submit">Guardar</button>
 </form>
