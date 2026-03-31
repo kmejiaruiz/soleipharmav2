@@ -16,7 +16,8 @@ class Product
         $offset = (int) $offset;
 
         // Directamente en la consulta para LIMIT/OFFSET
-        $sql = "SELECT sku, id, name, description, image, stock, available, cost, sale_price, utility_percent, tax_percent
+        // Actual DB has 'sale_price'. Aliasing as 'price' for compatibility.
+        $sql = "SELECT id, sku, name, description, image, stock, available, cost, sale_price, sale_price as price, utility_percent, tax_percent
                 FROM products
                 LIMIT $limit OFFSET $offset";
         $stmt = $this->pdo->query($sql);
@@ -34,7 +35,7 @@ class Product
     public function getById($id)
     {
         $stmt = $this->pdo->prepare(
-            "SELECT sku,id,name,description,image,stock,available,cost,sale_price,utility_percent,tax_percent
+            "SELECT sku,id,name,description,image,stock,available,cost,sale_price,sale_price as price,utility_percent,tax_percent
              FROM products
              WHERE id = ?"
         );
@@ -52,6 +53,7 @@ class Product
 
     public function updateSalePrice($id, $salePrice)
     {
+        // Database column is 'sale_price'
         $stmt = $this->pdo->prepare("UPDATE products SET sale_price = ? WHERE id = ?");
         return $stmt->execute([$salePrice, $id]);
     }

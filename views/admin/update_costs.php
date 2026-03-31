@@ -3,17 +3,29 @@
 ?>
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Actualizar Costos de Productos</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Actualizar Costos de Productos</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Actualizar Costos de Productos</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form id="updateCostsForm" action="index.php?controller=product&action=updateCosts" method="post">
+        <form id="updateCostsForm" action="/soleipharmav2/product/updateCosts" method="post">
             <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>SKU</th>
                         <th>Producto</th>
+                        <th>Precio Venta (Ref)</th>
                         <th>Costo Actual</th>
                         <th>Nuevo Costo</th>
                     </tr>
@@ -22,11 +34,12 @@
                     <?php foreach ($products as $product): ?>
                         <tr>
                             <td><?= htmlspecialchars($product['sku'] ?? $product['id']) ?></td>
-                            <td><?= htmlspecialchars($product['name']) ?></td>
+                            <td><?= htmlspecialchars($product['name'] ?? '') ?></td>
                             <td>$<?= number_format($product['price'], 2) ?></td>
+                            <td>$<?= number_format($product['cost'], 2) ?></td>
                             <td>
                                 <input type="number" name="costs[<?= $product['id'] ?>]"
-                                    value="<?= number_format($product['price'], 2, '.', '') ?>" step="0.01"
+                                    value="<?= number_format($product['cost'], 2, '.', '') ?>" step="0.01"
                                     class="form-control">
                             </td>
                         </tr>
@@ -39,7 +52,6 @@
 </section>
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $("#updateCostsForm").on("submit", function (e) {
         e.preventDefault();
@@ -56,7 +68,7 @@
                         title: 'Actualización exitosa',
                         text: response.message
                     }).then(function () {
-                        window.location.href = "index.php?controller=product&action=updateCostsForm";
+                        window.location.href = "/soleipharmav2/product/updateCostsForm";
                     });
                 } else {
                     Swal.fire({

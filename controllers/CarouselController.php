@@ -45,7 +45,7 @@ class CarouselController extends AdminController {
               $_SESSION['flash'] = "Error al agregar el slide.";
               $_SESSION['flash_type'] = "alert";
          }
-         header("Location: index.php?controller=carousel&action=index");
+         header("Location: /soleipharmav2/carousel/index");
          exit;
     }
     
@@ -56,7 +56,7 @@ class CarouselController extends AdminController {
          if(!$slide){
               $_SESSION['flash'] = "Slide no encontrado.";
               $_SESSION['flash_type'] = "alert";
-              header("Location: index.php?controller=carousel&action=index");
+              header("Location: /soleipharmav2/carousel/index");
               exit;
          }
          $this->renderAdmin('admin/carousel_edit', ['slide' => $slide]);
@@ -75,7 +75,7 @@ class CarouselController extends AdminController {
               $_SESSION['flash'] = "Error al actualizar el slide.";
               $_SESSION['flash_type'] = "alert";
          }
-         header("Location: index.php?controller=carousel&action=index");
+         header("Location: /soleipharmav2/carousel/index");
          exit;
     }
     
@@ -89,7 +89,7 @@ class CarouselController extends AdminController {
               $_SESSION['flash'] = "Error al eliminar el slide.";
               $_SESSION['flash_type'] = "alert";
          }
-         header("Location: index.php?controller=carousel&action=index");
+         header("Location: /soleipharmav2/carousel/index");
          exit;
     }
 }

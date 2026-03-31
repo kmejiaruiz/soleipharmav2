@@ -27,7 +27,7 @@ class SalesReportController extends AdminController
         if (empty($startDate) || empty($endDate)) {
             $_SESSION['flash'] = "Debe seleccionar ambas fechas para filtrar el reporte.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: index.php?controller=salesReport&action=index");
+            header("Location: /soleipharmav2/salesReport/index");
             exit;
         }
 

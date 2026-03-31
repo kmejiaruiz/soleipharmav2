@@ -9,7 +9,6 @@
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "America/Managua";
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -44,14 +43,15 @@ SET time_zone = "-06:00";
 --
 -- Base de datos: `pharmacy`
 --
-
+create database if not exists pharmacy;
+use pharmacy;
 -- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `carousel`
 --
 
-CREATE TABLE `carousel` (
+create table if not exists `carousel` (
   `id` int(11) NOT NULL,
   `image` varchar(255) NOT NULL,
   `title` varchar(255) DEFAULT NULL,
@@ -73,7 +73,7 @@ INSERT INTO `carousel` (`id`, `image`, `title`, `description`, `created_at`) VAL
 -- Estructura de tabla para la tabla `cart`
 --
 
-CREATE TABLE `cart` (
+create table if not exists `cart` (
   `id` int(11) NOT NULL,
   `session_id` varchar(255) NOT NULL,
   `product_id` int(11) NOT NULL,
@@ -94,7 +94,7 @@ INSERT INTO `cart` (`id`, `session_id`, `product_id`, `quantity`, `added_at`) VA
 -- Estructura de tabla para la tabla `inventory_log`
 --
 
-CREATE TABLE `inventory_log` (
+create table if not exists `inventory_log` (
   `id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `admin_id` int(11) NOT NULL,
@@ -152,7 +152,7 @@ INSERT INTO `inventory_log` (`id`, `product_id`, `admin_id`, `admin_name`, `chan
 -- Estructura de tabla para la tabla `notes`
 --
 
-CREATE TABLE `notes` (
+create table if not exists `notes` (
   `id` int(11) NOT NULL,
   `type` enum('credit','debit') NOT NULL,
   `note_number` varchar(50) NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE `notes` (
 -- Estructura de tabla para la tabla `orders`
 --
 
-CREATE TABLE `orders` (
+create table if not exists `orders` (
   `id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `total` decimal(10,2) NOT NULL,
@@ -211,7 +211,7 @@ INSERT INTO `orders` (`id`, `user_id`, `total`, `status`, `created_at`) VALUES
 -- Estructura de tabla para la tabla `order_items`
 --
 
-CREATE TABLE `order_items` (
+create table if not exists `order_items` (
   `id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
@@ -246,7 +246,7 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`) 
 -- Estructura de tabla para la tabla `products`
 --
 
-CREATE TABLE `products` (
+create table if not exists `products` (
   `id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
@@ -284,7 +284,7 @@ INSERT INTO `products` (`id`, `name`, `description`, `price`, `image`, `stock`, 
 -- Estructura de tabla para la tabla `users`
 --
 
-CREATE TABLE `users` (
+create table if not exists `users` (
   `id` int(11) NOT NULL,
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -445,7 +445,7 @@ COMMIT;
 -- Estructura de tabla para la tabla `carousel`
 --
 
-CREATE TABLE `carousel` (
+create table if not exists `carousel` (
   `id` int(11) NOT NULL,
   `image` varchar(255) NOT NULL,
   `title` varchar(255) DEFAULT NULL,
@@ -467,7 +467,7 @@ INSERT INTO `carousel` (`id`, `image`, `title`, `description`, `created_at`) VAL
 -- Estructura de tabla para la tabla `cart`
 --
 
-CREATE TABLE `cart` (
+create table if not exists `cart` (
   `id` int(11) NOT NULL,
   `session_id` varchar(255) NOT NULL,
   `product_id` int(11) NOT NULL,
@@ -488,7 +488,7 @@ INSERT INTO `cart` (`id`, `session_id`, `product_id`, `quantity`, `added_at`) VA
 -- Estructura de tabla para la tabla `inventory_log`
 --
 
-CREATE TABLE `inventory_log` (
+create table if not exists `inventory_log` (
   `id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `admin_id` int(11) NOT NULL,
@@ -540,7 +540,7 @@ INSERT INTO `inventory_log` (`id`, `product_id`, `admin_id`, `admin_name`, `chan
 -- Estructura de tabla para la tabla `orders`
 --
 
-CREATE TABLE `orders` (
+create table if not exists `orders` (
   `id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `total` decimal(10,2) NOT NULL,
@@ -573,7 +573,7 @@ INSERT INTO `orders` (`id`, `user_id`, `total`, `status`, `created_at`) VALUES
 -- Estructura de tabla para la tabla `order_items`
 --
 
-CREATE TABLE `order_items` (
+create table if not exists `order_items` (
   `id` int(11) NOT NULL,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
@@ -606,7 +606,7 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`) 
 -- Estructura de tabla para la tabla `products`
 --
 
-CREATE TABLE `products` (
+create table if not exists `products` (
   `id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
@@ -644,7 +644,7 @@ INSERT INTO `products` (`id`, `name`, `description`, `price`, `image`, `stock`, 
 -- Estructura de tabla para la tabla `users`
 --
 
-CREATE TABLE `users` (
+create table if not exists `users` (
   `id` int(11) NOT NULL,
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,

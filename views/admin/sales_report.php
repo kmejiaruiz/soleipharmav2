@@ -3,15 +3,26 @@
 ?>
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Reporte de Ventas</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Reporte de Ventas</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Reporte de Ventas</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
         <!-- Formulario para seleccionar el rango de fechas -->
-        <form class="form-inline mb-4" method="GET" action="index.php">
-            <input type="hidden" name="controller" value="salesReport">
-            <input type="hidden" name="action" value="index">
+        <form id="filterForm" class="form-inline mb-4" method="GET" action="/soleipharmav2/salesReport/index">
+            
+            
             <div class="form-group mr-2">
                 <label for="start_date" class="mr-2">Desde:</label>
                 <input type="date" id="start_date" name="start_date" class="form-control"
@@ -57,34 +68,49 @@
     </div>
 </section>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<!-- SweetAlert2 Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
-    $("#pdfButton").click(function (e) {
-        e.preventDefault();
+    function validateDates() {
         var startDate = $("#start_date").val();
         var endDate = $("#end_date").val();
+        
         if (!startDate || !endDate) {
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Debe seleccionar ambas fechas para generar el reporte.'
+                icon: 'warning',
+                title: 'Atención',
+                text: 'Debe seleccionar ambas fechas para realizar esta acción.',
+                confirmButtonColor: '#6f42c1'
             });
-        } else {
-            window.location.href = "index.php?controller=salesReport&action=generatePDF&start_date=" + startDate + "&end_date=" + endDate;
+            return false;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Fechas Inválidas',
+                text: 'La fecha "Desde" tiene que ser mayor o igual que la fecha "Hasta".',
+                confirmButtonColor: '#6f42c1'
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    $("#pdfButton").click(function (e) {
+        e.preventDefault();
+        if (validateDates()) {
+            var startDate = $("#start_date").val();
+            var endDate = $("#end_date").val();
+            window.location.href = "/soleipharmav2/salesReport/generatePDF?start_date=" + startDate + "&end_date=" + endDate;
         }
     });
 
     $("#filterForm").on("submit", function (e) {
-        var startDate = $("#start_date").val();
-        var endDate = $("#end_date").val();
-        if (!startDate || !endDate) {
+        if (!validateDates()) {
             e.preventDefault();
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Debe seleccionar ambas fechas para filtrar el reporte.'
-            });
         }
     });
 </script>

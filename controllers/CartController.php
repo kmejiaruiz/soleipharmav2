@@ -36,7 +36,7 @@ class CartController extends BaseController
         if (empty($cartItems)) {
             $_SESSION['flash'] = "El carrito está vacío.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: index.php?controller=cart&action=view");
+            header("Location: /soleipharmav2/cart/view");
             exit;
         }
 
@@ -57,7 +57,7 @@ class CartController extends BaseController
         if (!$stmt->execute([$user_id, $total, $status])) {
             $_SESSION['flash'] = "Error al crear la orden.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: index.php?controller=cart&action=view");
+            header("Location: /soleipharmav2/cart/view");
             exit;
         }
         $order_id = $pdo->lastInsertId();
@@ -78,7 +78,7 @@ class CartController extends BaseController
 
         $_SESSION['flash'] = "Compra realizada con éxito.";
         $_SESSION['flash_type'] = "success";
-        header("Location: index.php");
+        header("Location: /soleipharmav2/index.php");
         exit;
     }
 
@@ -89,7 +89,7 @@ class CartController extends BaseController
         if (!isset($_SESSION['user'])) {
             $_SESSION['flash'] = "Debes iniciar sesión para agregar productos al carrito.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: index.php");
+            header("Location: /soleipharmav2/index.php");
             exit;
         }
 
@@ -113,7 +113,7 @@ class CartController extends BaseController
         // Establecer mensaje flash tipo "cart" para mostrar el toast
         $_SESSION['flash'] = "Artículo agregado al carrito. ¿Desea ver el carrito?";
         $_SESSION['flash_type'] = "cart";
-        header("Location: index.php");
+        header("Location: /soleipharmav2/index.php");
         exit;
     }
 
@@ -129,7 +129,7 @@ class CartController extends BaseController
         if (isset($_GET['id'])) {
             $this->cartModel->removeFromCart($_GET['id']);
         }
-        header("Location: index.php?controller=cart&action=view");
+        header("Location: /soleipharmav2/cart/view");
     }
 
     // Método para limpiar el carrito (se invoca al cerrar sesión)

@@ -1,4 +1,10 @@
 RewriteEngine On
+
+# URL limpia para recuperacion de contraseña (oculta controller y action)
+# Público: /soleipharmav2/recuperar-contrasena/TOKEN
+# Interno: index.php?controller=auth&action=resetPassword&token=TOKEN
+RewriteRule ^recuperar-contrasena/([a-f0-9]{64})$ index.php?controller=auth&action=resetPassword&token=$1 [L,QSA]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?/$1 [L,QSA]

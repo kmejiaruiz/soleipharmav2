@@ -61,12 +61,98 @@ class AdminController extends BaseController
              FROM products"
         )->fetchAll(PDO::FETCH_ASSOC);
 
+        // Alertas de usuarios bloqueados (solo para superadmin)
+        $lockedUsersAlerts = [];
+        $unreadNotifications = [];
+        if (isset($_SESSION['user']['role'])) {
+            require_once 'models/Notification.php';
+            $notifModel = new Notification($pdo);
+            $unreadNotifications = $notifModel->getUnread($_SESSION['user']['id']);
+
+            if ($_SESSION['user']['role'] === 'superadmin') {
+                require_once 'models/User.php';
+                $userModel = new User($pdo);
+                $lockedUsersAlerts = $userModel->getLockedUsers();
+            }
+        }
+
+        // Verificar si el usuario actual fue ascendido recientemente
+        $roleUpgradeData = null;
+        if (isset($_SESSION['user']['id'])) {
+            $stmtUpg = $pdo->prepare("SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as admin_name FROM role_change_logs r JOIN users u ON r.changed_by = u.id WHERE r.target_user = ? AND r.acknowledged = 0 ORDER BY r.id DESC LIMIT 1");
+            $stmtUpg->execute([$_SESSION['user']['id']]);
+            $upgradeEvent = $stmtUpg->fetch(PDO::FETCH_ASSOC);
+
+            if ($upgradeEvent) {
+                // Confirm it's a promotion
+                if (($upgradeEvent['old_role'] === 'user' && in_array($upgradeEvent['new_role'], ['admin', 'superadmin'])) ||
+                    ($upgradeEvent['old_role'] === 'admin' && $upgradeEvent['new_role'] === 'superadmin')) {
+                    $roleUpgradeData = $upgradeEvent;
+                }
+            }
+        }
+
+        // Gráfico Ventas de últimos 7 días
+        $stmtChart = $pdo->query("
+            SELECT DATE(created_at) as sale_date, SUM(total) as daily_total
+            FROM orders
+            WHERE status='completado' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at) ASC
+        ");
+        $chartDataRaw = $stmtChart->fetchAll(PDO::FETCH_ASSOC);
+        
+        $last7DaysSales = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $last7DaysSales[$date] = 0;
+        }
+        foreach ($chartDataRaw as $row) {
+            $last7DaysSales[$row['sale_date']] = (float)$row['daily_total'];
+        }
+
         $this->renderAdmin('admin/admin_panel', [
             'dailySales' => $dailySales,
             'topProducts' => $topProducts,
             'lowStockProducts' => $lowStockProducts,
-            'products' => $products
+            'products' => $products,
+            'lockedUsersAlerts_ParaSuperadmin' => $lockedUsersAlerts,
+            'unreadNotificationsDashboard' => $unreadNotifications,
+            'roleUpgradeData' => $roleUpgradeData,
+            'last7DaysSales' => $last7DaysSales
         ]);
+    }
+
+    // Marcar notificaciones como leídas
+    public function markNotificationsRead()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !in_array($_SESSION['user']['role'], ['admin', 'superadmin'])) {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
+            exit;
+        }
+
+        global $pdo;
+        require_once 'models/Notification.php';
+        $notifModel = new Notification($pdo);
+        
+        // El array viene como notification_ids
+        $ids = $_POST['notification_ids'] ?? [];
+        
+        if (is_array($ids)) {
+            foreach ($ids as $id) {
+                // Validación de que la notificación le pertenece
+                $stmt = $pdo->prepare("SELECT user_id FROM notifications WHERE id = ?");
+                $stmt->execute([$id]);
+                $ownerId = $stmt->fetchColumn();
+                
+                if ($ownerId == $_SESSION['user']['id']) {
+                    $notifModel->markRead($id);
+                }
+            }
+        }
+        
+        echo json_encode(['success' => true]);
+        exit;
     }
 
     // Reporte de ventas
@@ -101,19 +187,70 @@ class AdminController extends BaseController
     // Generador de facturas y boletas
     public function invoice()
     {
-        // Aquí se implementaría la lógica para generar facturas, ya sea en HTML o PDF
-        $invoiceData = []; // Datos de ejemplo
-        $this->renderAdmin('admin/invoice', ['invoiceData' => $invoiceData]);
+        // Módulo de boletas eliminado. Redirigir al Dashboard.
+        header('Location: /soleipharmav2/admin/index');
+        exit;
     }
+
+    // --- Módulo Usuarios Bloqueados (Solo Superadmin) ---
+    public function lockedUsers()
+    {
+        if ($_SESSION['user']['role'] !== 'superadmin') {
+            die("Acceso denegado.");
+        }
+        global $pdo;
+        require_once 'models/User.php';
+        $userModel = new User($pdo);
+        $lockedUsers = $userModel->getLockedUsers();
+        
+        $this->renderAdmin('admin/locked_users', [
+            'lockedUsers' => $lockedUsers
+        ]);
+    }
+
+    public function unlockUserAction()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $_SESSION['user']['role'] !== 'superadmin') {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
+            exit;
+        }
+
+        // Validación de CSRF Token
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido (CSRF). Por favor, recargue la página.']);
+            exit;
+        }
+
+        $userId = trim($_POST['user_id'] ?? '');
+        $superadminPassword = trim($_POST['superadmin_password'] ?? '');
+
+        if (!$userId || !$superadminPassword) {
+            echo json_encode(['success' => false, 'message' => 'Faltan datos requeridos.']);
+            exit;
+        }
+
+        global $pdo;
+        require_once 'models/User.php';
+        $userModel = new User($pdo);
+
+        // Verificar contraseña del superadmin usando su ID en sesión
+        if (!$userModel->verifyPasswordById($_SESSION['user']['id'], $superadminPassword)) {
+            echo json_encode(['success' => false, 'message' => 'Contraseña de súper administrador incorrecta.']);
+            exit;
+        }
+
+        if ($userModel->unlockUser($userId)) {
+            echo json_encode(['success' => true, 'message' => 'Usuario desbloqueado correctamente.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al desbloquear el usuario.']);
+        }
+        exit;
+    }
+    // ----------------------------------------------------
 
     // Emisión de notas de crédito y débito
     // public function creditDebitNotes()
-    // {
-    //     // Lógica para mostrar y emitir notas
-    //     $this->renderAdmin('admin/credit_debit_notes');
-    // }
-
-    // Carga masiva de productos mediante Excel
 
     // Función auxiliar para renderizar vistas administrativas usando el layout de admin
     protected function renderAdmin($view, $data = [])
@@ -207,7 +344,7 @@ class AdminController extends BaseController
         if (!$product) {
             $_SESSION['flash'] = "Producto no encontrado.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: index.php?controller=admin&action=index");
+            header("Location: /soleipharmav2/admin/index");
             exit;
         }
         $this->renderAdmin('admin/edit_product', ['product' => $product]);
@@ -327,109 +464,493 @@ class AdminController extends BaseController
         $lowStockProducts = $stmtLow->fetchAll(PDO::FETCH_ASSOC);
         $this->renderAdmin('admin/low_stock', ['lowStockProducts' => $lowStockProducts]);
     }
-    // Muestra el formulario para aumentar el stock de un producto
-    public function increaseStock($id)
+    // El aumento de stock se gestiona exclusivamente a través del módulo de Pedidos
+    public function increaseStock($id = null)
     {
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $stmt->execute([$id]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$product) {
-            $_SESSION['flash'] = "Producto no encontrado.";
-            $_SESSION['flash_type'] = "alert";
-            header("Location: index.php?controller=admin&action=inventory");
-            exit;
-        }
-        $this->renderAdmin('admin/increase_stock', ['product' => $product]);
+        header('Location: /soleipharmav2/order/create');
+        exit;
     }
 
-    // Procesa el aumento de stock
-
-    public function updateStock($id)
+    // El aumento de stock se gestiona exclusivamente a través del módulo de Pedidos
+    public function updateStock($id = null)
     {
-        global $pdo;
-        // Obtener cantidad a aumentar y credenciales confirmadas
-        $additionalStock = isset($_POST['additional_stock']) ? (int) $_POST['additional_stock'] : 0;
-        $confirmUsername = trim($_POST['confirm_username'] ?? '');
-        $confirmPassword = trim($_POST['confirm_password'] ?? '');
-
-        if ($additionalStock <= 0) {
-            $response = ['success' => false, 'message' => "La cantidad debe ser mayor a 0."];
-            echo json_encode($response);
-            exit;
-        }
-
-        // Validar que se hayan ingresado ambos campos
-        if (empty($confirmUsername) || empty($confirmPassword)) {
-            $response = ['success' => false, 'message' => "Debe ingresar usuario y contraseña."];
-            echo json_encode($response);
-            exit;
-        }
-
-        // Obtener datos del usuario que confirma
-        $stmtAdmin = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-        $stmtAdmin->execute([$confirmUsername]);
-        $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
-
-        // Validar credenciales: si no se encuentra el usuario, o la contraseña no coincide, o el usuario no es admin, abortar
-        // in_array($adminData['role'], ['admin', 'superadmin']) verifica si el rol es admin o superadmin.
-        // Ahora, con !in_array(...), se permite el acceso si el usuario tiene cualquiera de los dos roles.
-        if (!$adminData || !password_verify($confirmPassword, $adminData['password']) || !in_array($adminData['role'], ['superadmin'])) {
-            $response = [
-                'success' => false,
-                'message' => "Credenciales incorrectas o no tienes permisos de superadmin. No se realizó la actualización."
-            ];
-            echo json_encode($response);
-            exit;
-        }
-
-        // Obtener el producto a actualizar
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $stmt->execute([$id]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$product) {
-            $response = ['success' => false, 'message' => "Producto no encontrado."];
-            echo json_encode($response);
-            exit;
-        }
-        $previousStock = $product['stock'];
-        $newStock = $previousStock + $additionalStock;
-
-        // Actualizar el stock
-        $stmtUpdate = $pdo->prepare("UPDATE products SET stock = ? WHERE id = ?");
-        $stmtUpdate->execute([$newStock, $id]);
-
-        // Registrar el cambio en el log de inventario
-        $admin_id = $adminData['id'];
-        $admin_name = $adminData['username'];
-        $changeType = 'stock_increase';
-        $description = "Se aumentó el stock en " . $additionalStock . " unidades. Stock previo: " . $previousStock . ", Stock nuevo: " . $newStock;
-        $stmtLog = $pdo->prepare("INSERT INTO inventory_log (product_id, admin_id, admin_name, change_type, previous_stock, new_stock, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmtLog->execute([$id, $admin_id, $admin_name, $changeType, $previousStock, $newStock, $description]);
-
-        // Preparar datos de la boleta (recibo)
-        $company = COMPANY_NAME;
-        $branch = BRANCH;
-        $date = date("d/m/Y H:i:s");
-
-        $receipt = [
-            'product_id' => $id,
-            'product_name' => $product['name'],
-            'previous_stock' => $previousStock,
-            'additional_stock' => $additionalStock,
-            'new_stock' => $newStock,
-            'admin_aplica' => $admin_name,
-            'admin_autoriza' => $admin_name, // En este ejemplo, ambos son iguales
-            'date' => $date,
-            'company' => $company,
-            'branch' => $branch
-        ];
-
-        $response = ['success' => true, 'receipt' => $receipt];
-        echo json_encode($response);
+        echo json_encode(['success' => false, 'message' => 'El aumento de stock directo está deshabilitado. Use el módulo de Pedidos.']);
         exit;
     }
 
 
+    // --- GESTION DE ROLES (Superadmin) ---
+
+    public function manageRoles()
+    {
+        if ($_SESSION['user']['role'] !== 'superadmin') {
+            header('Location: /soleipharmav2/admin/index');
+            exit;
+        }
+
+        global $pdo;
+        // Listar todos los usuarios, excepto el propio superadmin
+        $stmt = $pdo->prepare("SELECT id, username, first_name, last_name, role, status FROM users WHERE id != ? ORDER BY role, first_name");
+        $stmt->execute([$_SESSION['user']['id']]);
+        $allUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $activeUsers = [];
+        $disabledUsers = [];
+        foreach ($allUsers as $u) {
+            if (($u['status'] ?? 'active') === 'disabled') {
+                $disabledUsers[] = $u;
+            } else {
+                $activeUsers[] = $u;
+            }
+        }
+
+        $this->renderAdmin('admin/role_management', [
+            'users' => $activeUsers,
+            'disabledUsers' => $disabledUsers
+        ]);
+    }
+
+    public function changeRoleAction()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $_SESSION['user']['role'] !== 'superadmin') {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
+            exit;
+        }
+
+        // Validación de CSRF Token
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido (CSRF). Por favor, recargue la página.']);
+            exit;
+        }
+
+        $targetUserId = intval($_POST['user_id'] ?? 0);
+        $newRole = trim($_POST['new_role'] ?? '');
+        $password = $_POST['superadmin_password'] ?? '';
+
+        if (!$targetUserId || !$newRole || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Faltan datos obligatorios.']);
+            exit;
+        }
+
+        global $pdo;
+        // Verificar contraseña del superadmin actual
+        $stmtAdmin = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmtAdmin->execute([$_SESSION['user']['id']]);
+        $adminHash = $stmtAdmin->fetchColumn();
+
+        if (!password_verify($password, $adminHash)) {
+            echo json_encode(['success' => false, 'message' => 'Contraseña de súper administrador incorrecta.']);
+            exit;
+        }
+
+        // Obtener el rol actual del usuario objetivo
+        $stmtTarget = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmtTarget->execute([$targetUserId]);
+        $oldRole = $stmtTarget->fetchColumn();
+
+        if (!$oldRole) {
+            echo json_encode(['success' => false, 'message' => 'Usuario objetivo no encontrado.']);
+            exit;
+        }
+
+        if ($oldRole === $newRole) {
+            echo json_encode(['success' => false, 'message' => 'El usuario ya tiene asignado ese rol.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Actualizar rol y obligar a cerrar sesión
+            $stmtUpdate = $pdo->prepare("UPDATE users SET role = ?, force_logout = 1 WHERE id = ?");
+            $stmtUpdate->execute([$newRole, $targetUserId]);
+
+            // Guardar en la bitácora
+            $stmtLog = $pdo->prepare("INSERT INTO role_change_logs (target_user, changed_by, old_role, new_role) VALUES (?, ?, ?, ?)");
+            $stmtLog->execute([$targetUserId, $_SESSION['user']['id'], $oldRole, $newRole]);
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Privilegios actualizados correctamente. La sesión del usuario ha sido invalidada.']);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar base de datos: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function editUserAction()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $_SESSION['user']['role'] !== 'superadmin') {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
+            exit;
+        }
+
+        // Validación de CSRF Token
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido (CSRF). Por favor, recargue la página.']);
+            exit;
+        }
+
+        $userId = intval($_POST['edit_user_id'] ?? 0);
+        $firstName = trim($_POST['first_name'] ?? '');
+        $secondName = trim($_POST['second_name'] ?? '');
+        $lastName = trim($_POST['last_name'] ?? '');
+        $secondSurname = trim($_POST['second_surname'] ?? '');
+        $branch = trim($_POST['branch'] ?? '');
+
+        if (!$userId || !$firstName || !$lastName || !$branch) {
+            echo json_encode(['success' => false, 'message' => 'Nombres, apellidos y sucursal son obligatorios.']);
+            exit;
+        }
+
+        global $pdo;
+
+        // Fetch current user data
+        $stmtUser = $pdo->prepare("SELECT first_name, second_name, last_name, second_surname, branch, personal_data_updated_at FROM users WHERE id = ?");
+        $stmtUser->execute([$userId]);
+        $currentUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+        if (!$currentUser) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado.']);
+            exit;
+        }
+
+        $personalDataChanged = (
+            $currentUser['first_name'] !== $firstName || 
+            $currentUser['second_name'] !== $secondName || 
+            $currentUser['last_name'] !== $lastName || 
+            $currentUser['second_surname'] !== $secondSurname
+        );
+
+        $branchChanged = ($currentUser['branch'] !== $branch);
+
+        if (!$personalDataChanged && !$branchChanged) {
+            echo json_encode(['success' => true, 'message' => 'No hubo cambios que guardar.']);
+            exit;
+        }
+
+        if ($personalDataChanged && !empty($currentUser['personal_data_updated_at'])) {
+            $lastUpdateDate = new DateTime($currentUser['personal_data_updated_at']);
+            $now = new DateTime();
+            $interval = $lastUpdateDate->diff($now);
+            
+            // Check if 6 months have passed
+            $monthsPassed = ($interval->y * 12) + $interval->m;
+            if ($monthsPassed < 6) {
+                echo json_encode(['success' => false, 'message' => 'Los datos personales solo pueden modificarse una vez cada 6 meses.']);
+                exit;
+            }
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $updateFields = [];
+            $params = [];
+
+            if ($personalDataChanged) {
+                $updateFields[] = "first_name = ?";
+                $updateFields[] = "second_name = ?";
+                $updateFields[] = "last_name = ?";
+                $updateFields[] = "second_surname = ?";
+                $updateFields[] = "personal_data_updated_at = NOW()";
+                array_push($params, $firstName, $secondName, $lastName, $secondSurname);
+            }
+
+            if ($branchChanged) {
+                $updateFields[] = "branch = ?";
+                $updateFields[] = "force_logout = 1";
+                $params[] = $branch;
+            }
+
+            $params[] = $userId;
+            
+            $sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
+            $stmtUpdate = $pdo->prepare($sql);
+            $stmtUpdate->execute($params);
+
+            $pdo->commit();
+
+            $msg = 'Datos actualizados correctamente.';
+            if ($branchChanged) {
+                $msg .= ' La sesión del usuario ha sido invalidada por el cambio de sucursal.';
+            }
+
+            echo json_encode(['success' => true, 'message' => $msg]);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar base de datos: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function roleChangeHistory()
+    {
+        if ($_SESSION['user']['role'] !== 'superadmin') {
+            header('Location: /soleipharmav2/admin/index');
+            exit;
+        }
+
+        global $pdo;
+        $stmt = $pdo->query("
+            SELECT r.*, 
+                   CONCAT(u1.first_name, ' ', u1.last_name) as target_name,
+                   CONCAT(u2.first_name, ' ', u2.last_name) as admin_name
+            FROM role_change_logs r
+            JOIN users u1 ON r.target_user = u1.id
+            JOIN users u2 ON r.changed_by = u2.id
+            ORDER BY r.created_at DESC
+        ");
+        $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->renderAdmin('admin/role_change_history', ['logs' => $logs]);
+    }
+
+    public function acknowledgeRoleUpgrade()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no válido']);
+            exit;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $userId = $_SESSION['user']['id'] ?? 0;
+        
+        if ($userId) {
+            global $pdo;
+            $stmt = $pdo->prepare("UPDATE role_change_logs SET acknowledged = 1 WHERE target_user = ?");
+            if ($stmt->execute([$userId])) {
+                echo json_encode(['success' => true]);
+                exit;
+            }
+        }
+        echo json_encode(['success' => false, 'message' => 'Error al procesar']);
+        exit;
+    }
+
+    /** =====================================================
+     *  FEATURE: Mi Perfil
+     *  ===================================================== */
+    public function myProfile()
+    {
+        // Aseguramos que la sucursal esté en la sesión para los usuarios que ya tenían sesión iniciada
+        if (!isset($_SESSION['user']['branch']) || empty($_SESSION['user']['branch'])) {
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT branch FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user']['id']]);
+            $branch = $stmt->fetchColumn();
+            $_SESSION['user']['branch'] = $branch ?: 'N/A';
+        }
+
+        $this->renderAdmin('admin/my_profile');
+    }
+
+    public function changeMyPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no válido.']);
+            exit;
+        }
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido. Recargue la página.']);
+            exit;
+        }
+        $currentPw = $_POST['current_password'] ?? '';
+        $newPw     = trim($_POST['new_password'] ?? '');
+        if (!$currentPw || !$newPw) {
+            echo json_encode(['success' => false, 'message' => 'Todos los campos son obligatorios.']);
+            exit;
+        }
+        if (strlen($newPw) < 8) {
+            echo json_encode(['success' => false, 'message' => 'La nueva contraseña debe tener al menos 8 caracteres.']);
+            exit;
+        }
+        global $pdo;
+        $userId = $_SESSION['user']['id'];
+        $stmt   = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $hash = $stmt->fetchColumn();
+        if (!password_verify($currentPw, $hash)) {
+            echo json_encode(['success' => false, 'message' => 'La contraseña actual no es correcta.']);
+            exit;
+        }
+        $newHash = password_hash($newPw, PASSWORD_DEFAULT);
+        $upd = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $upd->execute([$newHash, $userId]);
+        echo json_encode(['success' => true, 'message' => '¡Contraseña actualizada correctamente!']);
+        exit;
+    }
+
+    /** =====================================================
+     *  FEATURE: Verificar Sesión (Lock Screen Auto-Logout)
+     *  ===================================================== */
+    public function verifySessionPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false]);
+            exit;
+        }
+        $pw     = $_POST['password'] ?? '';
+        $userId = $_SESSION['user']['id'] ?? 0;
+        if (!$pw || !$userId) {
+            echo json_encode(['success' => false]);
+            exit;
+        }
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $hash = $stmt->fetchColumn();
+        echo json_encode(['success' => password_verify($pw, $hash)]);
+        exit;
+    }
+
+    /** =====================================================
+     *  FEATURE: User Management (Disable / Delete)
+     *  ===================================================== */
+    public function toggleUserStatusAction()
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'superadmin') {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado. Se requiere ser superadmin.']);
+            exit;
+        }
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
+            exit;
+        }
+
+        // Validate CSRF
+        if (empty($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido o caducado. Recarga la página.']);
+            exit;
+        }
+
+        $targetUserId = $_POST['user_id'] ?? null;
+        $newStatus = $_POST['new_status'] ?? ''; // 'active' or 'disabled'
+        $loggedUserId = $_SESSION['user']['id'] ?? null;
+        $authUsername = trim($_POST['auth_username'] ?? '');
+        $authPassword = $_POST['auth_password'] ?? '';
+
+        if (!$targetUserId || !in_array($newStatus, ['active', 'disabled']) || !$authUsername || !$authPassword) {
+            echo json_encode(['success' => false, 'message' => 'Faltan credenciales de autorización o datos incompletos.']);
+            exit;
+        }
+
+        if ($targetUserId == $loggedUserId) {
+            echo json_encode(['success' => false, 'message' => 'No puedes cambiar tu propio estado de acceso por seguridad.']);
+            exit;
+        }
+
+        global $pdo;
+        try {
+            // Validate Authorization Credentials
+            $stmtAuth = $pdo->prepare("SELECT password, role FROM users WHERE username = ? AND status = 'active'");
+            $stmtAuth->execute([$authUsername]);
+            $authUser = $stmtAuth->fetch(PDO::FETCH_ASSOC);
+
+            if (!$authUser || $authUser['role'] !== 'superadmin' || !password_verify($authPassword, $authUser['password'])) {
+                echo json_encode(['success' => false, 'message' => 'Credenciales de autorización inválidas. Se requiere un superusuario.']);
+                exit;
+            }
+
+            // Check if target user exists
+            $stmtCheck = $pdo->prepare("SELECT id, username FROM users WHERE id = ?");
+            $stmtCheck->execute([$targetUserId]);
+            $user = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                echo json_encode(['success' => false, 'message' => 'Usuario objetivo no encontrado.']);
+                exit;
+            }
+
+            // Update status
+            $forceLogout = ($newStatus === 'disabled') ? 1 : 0;
+            $stmtUpdate = $pdo->prepare("UPDATE users SET status = ?, force_logout = ? WHERE id = ?");
+            if ($stmtUpdate->execute([$newStatus, $forceLogout, $targetUserId])) {
+                $actionWord = $newStatus === 'disabled' ? 'deshabilitado' : 'activado';
+                echo json_encode([
+                    'success' => true, 
+                    'message' => "La cuenta de {$user['username']} ha sido {$actionWord} exitosamente."
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error al actualizar el estado en base de datos.']);
+            }
+        } catch (\PDOException $e) {
+            error_log("Error toggling user status: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error de conexión con la base de datos.']);
+        }
+    }
+
+    public function deleteUserAction()
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'superadmin') {
+            echo json_encode(['success' => false, 'message' => 'Acceso denegado. Se requiere ser superadmin.']);
+            exit;
+        }
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
+            exit;
+        }
+
+        // Validate CSRF
+        if (empty($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            echo json_encode(['success' => false, 'message' => 'Token de seguridad inválido o caducado. Recarga la página.']);
+            exit;
+        }
+
+        $targetUserId = $_POST['user_id'] ?? null;
+        $loggedUserId = $_SESSION['user']['id'] ?? null;
+        $authUsername = trim($_POST['auth_username'] ?? '');
+        $authPassword = $_POST['auth_password'] ?? '';
+
+        if (!$targetUserId || !$authUsername || !$authPassword) {
+            echo json_encode(['success' => false, 'message' => 'Faltan credenciales de autorización o el ID de usuario.']);
+            exit;
+        }
+
+        if ($targetUserId == $loggedUserId) {
+            echo json_encode(['success' => false, 'message' => 'No puedes auto-eliminarte.']);
+            exit;
+        }
+
+        global $pdo;
+        try {
+            // Validate Authorization Credentials
+            $stmtAuth = $pdo->prepare("SELECT password, role FROM users WHERE username = ? AND status = 'active'");
+            $stmtAuth->execute([$authUsername]);
+            $authUser = $stmtAuth->fetch(PDO::FETCH_ASSOC);
+
+            if (!$authUser || $authUser['role'] !== 'superadmin' || !password_verify($authPassword, $authUser['password'])) {
+                echo json_encode(['success' => false, 'message' => 'Credenciales de autorización inválidas. Se requiere un superusuario.']);
+                exit;
+            }
+
+            // Delete user physically
+            $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$targetUserId]);
+            
+            if ($stmt->rowCount() > 0) {
+                echo json_encode(['success' => true, 'message' => 'El usuario ha sido eliminado de la plataforma.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se encontró el usuario para eliminar o ya fue eliminado.']);
+            }
+        } catch (\PDOException $e) {
+            error_log("Error deleting user: " . $e->getMessage());
+            // Error 23000 typically means a foreign key constraint violation
+            if ($e->getCode() == '23000') {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Este usuario tiene registros asociados (como pedidos, historial de roles o descartes) cruciales para el sistema y no puede ser eliminado permanentemente.'
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Ocurrió un error inesperado en la base de datos al intentar eliminar.']);
+            }
+        }
+    }
 }
-?>

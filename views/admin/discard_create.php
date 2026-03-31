@@ -1,10 +1,20 @@
 <?php if(session_status() === PHP_SESSION_NONE) session_start(); ?>
-<!— Incluir jQuery y SweetAlert2 —>
+<!— Incluir jQuery —>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<h1>Solicitar Descarte</h1>
+<div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Solicitar Descarte</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Solicitar Descarte</li>
+                </ol>
+            </div>
+        </div>
 
-<form id="formDiscard" method="POST" action="index.php?controller=discard&action=request">
+<form id="formDiscard" method="POST" action="/soleipharmav2/discard/request">
   <div class="form-group">
     <label for="product_id">Producto:</label>
     <select name="product_id" id="product_id" class="form-control" required>
@@ -29,6 +39,12 @@
     $('#formDiscard').on('submit', function(e) {
       e.preventDefault();
       var $form = $(this);
+      var $btn = $form.find('button[type="submit"]');
+      var originalBtnText = $btn.text();
+
+      // Deshabilitar botón y mostrar estado de carga para prevenir clics múltiples
+      $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+
       $.ajax({
         url: $form.attr('action'),
         type: 'POST',
@@ -37,9 +53,7 @@
         success: function(data) {
           Swal.fire({
             icon: data.success ? 'success' : 'error',
-            title: data.message,
-            timer: 3000,
-            showConfirmButton: false
+            title: data.message || 'Solicitud enviada'
           });
           if (data.success) {
             $form[0].reset();
@@ -52,18 +66,12 @@
             title: 'Error interno al enviar solicitud',
             text: xhr.responseText || status
           });
+        },
+        complete: function() {
+            // Restaurar botón sea cual sea el resultado
+            $btn.prop('disabled', false).text(originalBtnText);
         }
       });
     });
   });
-</script>
-
-
-<script>
-$('#formDiscard').submit(function(e){
-  e.preventDefault();
-  $.post('index.php?controller=discard&action=request', $(this).serialize(), data=>{
-    Swal.fire(data.success?'success':'error', data.message);
-  }, 'json');
-});
 </script>

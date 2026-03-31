@@ -3,12 +3,23 @@
 ?>
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Crear Nota de Crédito/Débito</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Crear Nota de Crédito/Débito</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Crear Nota de Crédito/Débito</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form id="notesForm" action="index.php?controller=notes&action=save" method="post">
+        <form id="notesForm" action="/soleipharmav2/notes/save" method="post">
             <div class="form-group">
                 <label>Número de Nota</label>
                 <input type="text" name="note_number" class="form-control"
@@ -45,39 +56,41 @@
             <input type="hidden" name="confirm_username" id="confirmUsername">
             <input type="hidden" name="confirm_password" id="confirmPassword">
             <button type="submit" class="btn btn-primary">Crear Nota</button>
-            <a href="index.php?controller=notes&action=index" class="btn btn-secondary">Cancelar</a>
+            <a href="/soleipharmav2/notes/index" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </section>
 
-<!-- Incluir SweetAlert2 y jQuery -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</section>
+
+<!-- Incluir jQuery (Micromodal JS ya se incluye globalmente en admin_footer) -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
     $("#notesForm").on('submit', function (e) {
         e.preventDefault(); // Evita el envío tradicional del formulario
-        Swal.fire({
+        
+        window.ActionModal.show({
             title: 'Confirmar Creación de Nota',
-            html: `<p>Ingrese sus credenciales de administrador para confirmar:</p>
-                 <input type="text" id="swal-input-username" class="swal2-input" placeholder="Usuario">
-                 <input type="password" id="swal-input-password" class="swal2-input" placeholder="Contraseña">`,
-            focusConfirm: false,
-            preConfirm: () => {
-                const username = Swal.getPopup().querySelector('#swal-input-username').value;
-                const password = Swal.getPopup().querySelector('#swal-input-password').value;
+            description: 'Ingrese sus credenciales de administrador para confirmar:',
+            fields: [
+                { id: 'modal-input-username', type: 'text', placeholder: 'Usuario' },
+                { id: 'modal-input-password', type: 'password', placeholder: 'Contraseña' }
+            ],
+            onConfirm: function(data) {
+                const username = data['modal-input-username'] ? data['modal-input-username'].trim() : '';
+                const password = data['modal-input-password'] ? data['modal-input-password'].trim() : '';
+
                 if (!username || !password) {
-                    Swal.showValidationMessage('Debe ingresar usuario y contraseña');
+                    window.ActionModal.showError('Debe ingresar usuario y contraseña');
+                    return;
                 }
-                return { username: username, password: password };
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Confirmar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
+
+                window.ActionModal.hide();
+
                 // Asigna las credenciales ingresadas a los campos ocultos
-                $("#confirmUsername").val(result.value.username);
-                $("#confirmPassword").val(result.value.password);
+                $("#confirmUsername").val(username);
+                $("#confirmPassword").val(password);
+                
                 // Serializa y envía el formulario vía AJAX
                 var formData = $("#notesForm").serialize();
                 $.ajax({
@@ -92,7 +105,7 @@
                                 title: 'Nota creada',
                                 text: response.message
                             }).then(() => {
-                                window.location.href = "index.php?controller=notes&action=index";
+                                window.location.href = "/soleipharmav2/notes/index";
                             });
                         } else {
                             // Si las credenciales son incorrectas u ocurre otro error, se muestra el error sin reiniciar el formulario

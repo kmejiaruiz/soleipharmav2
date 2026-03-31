@@ -1,21 +1,32 @@
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Editar Producto</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Editar Producto</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Editar Producto</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form id="editProductForm" action="index.php?controller=admin&action=updateProduct&id=<?= $product['id'] ?>"
+        <form id="editProductForm" action="/soleipharmav2/admin/updateProduct?id=<?= $product['id'] ?>"
             method="post">
             <div class="form-group">
                 <label>Nombre</label>
-                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($product['name']) ?>"
+                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($product['name'] ?? '') ?>"
                     required>
             </div>
             <div class="form-group">
                 <label>Descripción</label>
                 <textarea name="description" class="form-control"
-                    required><?= htmlspecialchars($product['description']) ?></textarea>
+                    required><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
             </div>
             <div class="form-group">
                 <label>Stock</label>
@@ -61,7 +72,6 @@
 </section>
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(function () {
         // Función para recalcular precio de venta incluyendo IVA
@@ -69,40 +79,38 @@
             var cost = parseFloat($('#costInput').val()) || 0;
             var util = parseFloat($('#utilityInput').val()) || 0;
             var tax = parseFloat($('#taxInput').val()) || 0;
-            // Precio neto con utilidad
             var net = cost * (1 + util / 100);
-            // Precio con impuesto
             var sale = (net * (1 + tax / 100)).toFixed(2);
             $('#salePrice').val(sale);
         }
 
-        // Aplicar al cambiar cualquiera de los tres campos
         $('#costInput, #utilityInput, #taxInput').on('input', recalcSalePrice);
 
         var form = $('#editProductForm');
+        
         form.on('submit', function (e) {
             e.preventDefault();
-            Swal.fire({
-                title: 'Confirmar Actualización de Producto',
-                html: `<p>Ingrese credenciales de Superadmin:</p>
-                   <input type="text" id="swal-input-username" class="swal2-input" placeholder="Usuario">
-                   <input type="password" id="swal-input-password" class="swal2-input" placeholder="Contraseña">`,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Confirmar',
-                cancelButtonText: 'Cancelar',
-                preConfirm: () => {
-                    const username = Swal.getPopup().querySelector('#swal-input-username').value;
-                    const password = Swal.getPopup().querySelector('#swal-input-password').value;
+            window.ActionModal.show({
+                title: 'Confirmar Actualización',
+                description: 'Ingrese credenciales de Superadmin:',
+                fields: [
+                    { id: 'modal-input-username', type: 'text', placeholder: 'Usuario' },
+                    { id: 'modal-input-password', type: 'password', placeholder: 'Contraseña' }
+                ],
+                onConfirm: function(data) {
+                    const username = data['modal-input-username'] ? data['modal-input-username'].trim() : '';
+                    const password = data['modal-input-password'] ? data['modal-input-password'].trim() : '';
+
                     if (!username || !password) {
-                        Swal.showValidationMessage('Ambos campos son obligatorios');
+                        window.ActionModal.showError('Ambos campos son obligatorios');
+                        return;
                     }
-                    return { username: username, password: password };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $('#confirmUsername').val(result.value.username);
-                    $('#confirmPassword').val(result.value.password);
+
+                    window.ActionModal.hide();
+
+                    $('#confirmUsername').val(username);
+                    $('#confirmPassword').val(password);
+                    
                     $.ajax({
                         url: form.attr('action'),
                         type: 'POST',
@@ -111,7 +119,7 @@
                         success: function (response) {
                             if (response.success) {
                                 Swal.fire({ icon: 'success', title: 'Actualizado', text: response.message })
-                                    .then(() => window.location.href = 'index.php?controller=product&action=index');
+                                    .then(() => window.location.href = '/soleipharmav2/admin/index'); // Redirigir a listado
                             } else {
                                 Swal.fire({ icon: 'error', title: 'Error', text: response.message });
                             }

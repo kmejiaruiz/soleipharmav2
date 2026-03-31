@@ -12,6 +12,9 @@ class ProductController extends BaseController
 
     public function __construct()
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         // parent::__construct();
         global $pdo;
         $this->productModel = new Product($pdo);
@@ -57,7 +60,7 @@ class ProductController extends BaseController
         $product = $this->productModel->getById($id);
         if (!$product) {
             $_SESSION['flash'] = "Producto no encontrado.";
-            header("Location: index.php?controller=product&action=index");
+            header("Location: /soleipharmav2/product/index");
             exit;
         }
         $this->render('product_edit', ['product' => $product]);
@@ -69,7 +72,7 @@ class ProductController extends BaseController
         // Validar rol
         if ($_SESSION['user']['role'] !== 'superadmin') {
             $_SESSION['flash'] = "Sin permisos para editar.";
-            header("Location: index.php?controller=product&action=index");
+            header("Location: /soleipharmav2/product/index");
             exit;
         }
 
@@ -86,7 +89,55 @@ class ProductController extends BaseController
         $this->productModel->updateSalePrice($id, $salePrice);
 
         $_SESSION['flash'] = "Producto actualizado correctamente.";
-        header("Location: index.php?controller=product&action=index");
+        header("Location: /soleipharmav2/product/index");
         exit;
+    }
+
+    // Actualizar costos masivamente desde update_costs.php
+    public function updateCostsForm()
+    {
+        // Auth Check
+        if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'superadmin')) {
+             header("Location: index.php");
+             exit;
+        }
+
+        $products = $this->productModel->getAll(1000, 0); // Limit high to show all
+        $this->renderAdmin('admin/update_costs', ['products' => $products]);
+    }
+
+    public function updateCosts()
+    {
+        if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], ['admin', 'superadmin'])) {
+            echo json_encode(['success' => false, 'message' => 'Requiere permiso de administrador.']);
+            exit;
+        }
+
+        $costs = $_POST['costs'] ?? [];
+        foreach ($costs as $id => $cost) {
+            $product = $this->productModel->getById($id);
+            if ($product) {
+                $utility = $product['utility_percent'] ?? 0;
+                $tax = $product['tax_percent'] ?? 0;
+                $newCost = floatval($cost);
+                
+                $this->productModel->updateCostTax($id, $newCost, $utility, $tax);
+                
+                $newSalePrice = round($newCost * (1 + $utility / 100), 2);
+                $this->productModel->updateSalePrice($id, $newSalePrice);
+            }
+        }
+        
+        echo json_encode(['success' => true, 'message' => 'Costos actualizados correctamente.']);
+        exit;
+    }
+
+    // Helper para renderizar vistas de admin
+    private function renderAdmin($view, $data = [])
+    {
+        extract($data);
+        require_once __DIR__ . '/../views/templates/admin_header.php';
+        require_once __DIR__ . '/../views/' . $view . '.php';
+        require_once __DIR__ . '/../views/templates/admin_footer.php';
     }
 }

@@ -1,11 +1,22 @@
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Listado de Notas de Crédito/Débito</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Listado de Notas de Crédito/Débito</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Listado de Notas de Crédito/Débito</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <a href="index.php?controller=notes&action=add" class="btn btn-success mb-3">Crear Nueva Nota</a>
+        <a href="/soleipharmav2/notes/add" class="btn btn-success mb-3">Crear Nueva Nota</a>
         <?php if (!empty($notes)): ?>
             <table class="table table-bordered">
                 <thead>
@@ -56,38 +67,40 @@
     </div>
 </section>
 
-<!-- Incluir SweetAlert2 y jQuery -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</section>
+
+<!-- Incluir jQuery (Micromodal JS ya se incluye globalmente en admin_footer) -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
     $(document).ready(function () {
         $(".annul-note").click(function () {
-            var noteId = $(this).data("id");
-            Swal.fire({
+            let currentNoteId = $(this).data("id");
+            
+            window.ActionModal.show({
                 title: 'Anular Nota',
-                html: `<p>Ingrese credenciales de usuario superior (superadmin) para anular la nota:</p>
-                   <input type="text" id="swal-input-username" class="swal2-input" placeholder="Usuario">
-                   <input type="password" id="swal-input-password" class="swal2-input" placeholder="Contraseña">`,
-                focusConfirm: false,
-                preConfirm: () => {
-                    const username = Swal.getPopup().querySelector('#swal-input-username').value;
-                    const password = Swal.getPopup().querySelector('#swal-input-password').value;
+                description: 'Ingrese credenciales de usuario superior (superadmin) para anular la nota:',
+                fields: [
+                    { id: 'modal-input-username', type: 'text', placeholder: 'Usuario' },
+                    { id: 'modal-input-password', type: 'password', placeholder: 'Contraseña' }
+                ],
+                confirmText: 'Anular',
+                onConfirm: function(data) {
+                    const username = data['modal-input-username'] ? data['modal-input-username'].trim() : '';
+                    const password = data['modal-input-password'] ? data['modal-input-password'].trim() : '';
+
                     if (!username || !password) {
-                        Swal.showValidationMessage('Debe ingresar usuario y contraseña');
+                        window.ActionModal.showError('Debe ingresar usuario y contraseña');
+                        return;
                     }
-                    return { username: username, password: password };
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Anular',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
+
+                    window.ActionModal.hide();
+
                     $.ajax({
-                        url: "index.php?controller=notes&action=cancel&id=" + noteId,
+                        url: "/soleipharmav2/notes/cancel?id=" + currentNoteId,
                         type: "POST",
                         data: {
-                            confirm_username: result.value.username,
-                            confirm_password: result.value.password
+                            confirm_username: username,
+                            confirm_password: password
                         },
                         dataType: "json",
                         success: function (response) {

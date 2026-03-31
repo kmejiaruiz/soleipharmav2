@@ -7,14 +7,14 @@
                     <ul class="splide__list">
                         <?php foreach ($slides as $slide): ?>
                             <li class="splide__slide">
-                                <img src="<?= htmlspecialchars($slide['image']) ?>"
+                                <img src="<?= htmlspecialchars($slide['image'] ?? '') ?>"
                                     alt="<?= htmlspecialchars($slide['title'] ?? '') ?>">
                                 <div class="carousel-overlay">
                                     <?php if (!empty($slide['title'])): ?>
-                                        <h2 class="text-xl font-bold"><?= htmlspecialchars($slide['title']) ?></h2>
+                                        <h2 class="text-xl font-bold"><?= htmlspecialchars($slide['title'] ?? '') ?></h2>
                                     <?php endif; ?>
                                     <?php if (!empty($slide['description'])): ?>
-                                        <p class="text-sm"><?= htmlspecialchars($slide['description']) ?></p>
+                                        <p class="text-sm"><?= htmlspecialchars($slide['description'] ?? '') ?></p>
                                     <?php endif; ?>
                                 </div>
                             </li>
@@ -30,10 +30,10 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         <?php foreach ($products as $product): ?>
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <img src="assets/img/<?= htmlspecialchars($product['image']) ?>"
-                    alt="<?= htmlspecialchars($product['name']) ?>" class="w-full h-48 object-cover">
+                <img src="assets/img/<?= htmlspecialchars($product['image'] ?? '') ?>"
+                    alt="<?= htmlspecialchars($product['name'] ?? '') ?>" class="w-full h-48 object-cover">
                 <div class="p-4">
-                    <h3 class="font-bold text-lg"><?= htmlspecialchars($product['name']) ?></h3>
+                    <h3 class="font-bold text-lg"><?= htmlspecialchars($product['name'] ?? '') ?></h3>
                     <p class="text-gray-700 mt-2">
                         Precio: $<?= number_format($product['sale_price'], 2) ?>
                     </p>
@@ -50,7 +50,7 @@
                             Ver detalle
                         </a>
                     <?php else: ?>
-                        <a href="index.php?controller=product&action=detail&id=<?= $product['id'] ?>"
+                        <a href="/soleipharmav2/product/detail?id=<?= $product['id'] ?>"
                             class="mt-4 inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                             Ver detalle
                         </a>
@@ -65,7 +65,7 @@
         <ul class="inline-flex -space-x-px">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <li>
-                    <a href="index.php?controller=product&action=index&page=<?= $i ?>"
+                    <a href="/soleipharmav2/product/index?page=<?= $i ?>"
                         class="px-4 py-2 border <?= $i == $currentPage ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' ?> hover:bg-indigo-500 hover:text-white">
                         <?= $i ?>
                     </a>
@@ -80,7 +80,7 @@
         <ul class="flex space-x-2">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <li>
-                    <a href="index.php?controller=product&action=index&page=<?= $i ?>" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 
+                    <a href="/soleipharmav2/product/index?page=<?= $i ?>" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 
                <?= ($i == $currentPage) ? 'bg-blue-500 text-white border-blue-500' : '' ?>">
                         <?= $i ?>
                     </a>

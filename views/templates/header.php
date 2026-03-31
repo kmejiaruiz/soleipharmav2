@@ -5,9 +5,10 @@ if (session_status() === PHP_SESSION_NONE) {
 ?>
 <!DOCTYPE html>
 <html lang="es" x-data="{ 
-    openLogin: <?= isset($error) && !empty($error) ? 'true' : 'false' ?>, 
+    openLogin: <?= (isset($error) && !empty($error)) || isset($_GET['show_login']) ? 'true' : 'false' ?>, 
     openRegister: false, 
-    openCart: false 
+    openCart: false,
+    openForgot: false
 }">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -32,26 +33,56 @@ if (session_status() === PHP_SESSION_NONE) {
 </head>
 
 <body class="bg-gray-50">
-    <!-- Loading Wrapper -->
-    <!-- <div id="loading-wrapper" style="
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #f9fafb;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.1s ease-in;">
-      <div style="font-size: 24px; color: #000;">
-        <i class="fas fa-spinner fa-spin"></i> Cargando...
-      </div> -->
-    </div> <!-- Barra de navegación con degradado morado oscuro -->
+    <!-- Loader Minimalista -->
+    <style>
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fdfdfd;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+        .loader-spinner {
+            width: 45px;
+            height: 45px;
+            border: 3px solid #e0e0e0;
+            border-top: 3px solid #8b5cf6; /* Tailwind focus purple */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+    <script>
+        window.addEventListener('load', function() {
+            var loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                setTimeout(function() {
+                    loader.remove();
+                }, 500);
+            }
+        });
+    </script>
+    
+    <!-- Barra de navegación con degradado morado oscuro -->
     <nav class="bg-gradient-to-r from-purple-500 to-indigo-500 shadow-lg">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="index.php" class="text-white text-2xl font-bold flex items-center">
+                    <a href="/soleipharmav2/index.php" class="text-white text-2xl font-bold flex items-center">
                         <!-- Imagen solo en móviles -->
                         <img src="http://soleipharma.ct.ws/images/logo.jpg" class="w-10 h-auto md:hidden" alt="Logo">
 
@@ -60,12 +91,12 @@ if (session_status() === PHP_SESSION_NONE) {
                     </a>
 
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <button onclick="location.href='index.php?controller=product&action=index'"
+                        <button onclick="location.href='/soleipharmav2/product/index'"
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Productos</button>
-                        <button onclick="location.href='index.php?controller=cart&action=view'"
+                        <button onclick="location.href='/soleipharmav2/cart/view'"
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Carrito</button>
                         <?php if (isset($_SESSION['user']) && ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'superadmin')): ?>
-                            <button onclick="location.href='index.php?controller=admin&action=index'"
+                            <button onclick="location.href='/soleipharmav2/admin/index'"
                                 class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Panel
                                 Admin</button>
                         <?php endif; ?>
@@ -79,7 +110,7 @@ if (session_status() === PHP_SESSION_NONE) {
                             $_SESSION['user']['last_name'] . ' ' .
                             $_SESSION['user']['second_surname']
                         ) ?></span>
-                        <a href="index.php?controller=auth&action=logout"
+                        <a href="/soleipharmav2/auth/logout"
                             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Cerrar sesión</a>
                     <?php else: ?>
                         <button @click="openLogin = true"
@@ -99,7 +130,7 @@ if (session_status() === PHP_SESSION_NONE) {
             <div><?= $_SESSION['flash']; ?></div>
             <?php if (isset($_SESSION['flash_type']) && $_SESSION['flash_type'] === 'cart'): ?>
                 <div class="flex space-x-2">
-                    <a href="index.php?controller=cart&action=view"
+                    <a href="/soleipharmav2/cart/view"
                         class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">Ver Carrito</a>
                     <button @click="show = false" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Continuar</button>
                 </div>
@@ -123,6 +154,20 @@ if (session_status() === PHP_SESSION_NONE) {
                 </svg>
             </button>
             <?php include __DIR__ . '/../../views/login_modal.php'; ?>
+        </div>
+    </div>
+
+    <!-- Modal de Recuperar Contraseña -->
+    <div x-show="openForgot" x-cloak
+        class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            <button @click="openForgot = false" class="absolute top-2 right-2 text-gray-200 hover:text-gray-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <?php include __DIR__ . '/../../views/forgot_password_modal.php'; ?>
         </div>
     </div>
 

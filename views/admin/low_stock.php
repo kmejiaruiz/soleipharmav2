@@ -1,6 +1,17 @@
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Productos con Bajo Stock</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Productos con Bajo Stock</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Productos con Bajo Stock</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
@@ -22,9 +33,9 @@
                     <td><?= $product['name'] ?></td>
                     <td><?= $product['stock'] ?></td>
                     <td>
-                        <a href="index.php?controller=admin&action=increaseStock&id=<?= $product['id'] ?>"
-                            class="btn btn-sm btn-warning">
-                            Aumentar Stock
+                        <a href="/soleipharmav2/order/create"
+                            class="btn btn-sm btn-primary">
+                            <i class="fas fa-cart-plus mr-1"></i> Realizar Pedido
                         </a>
                     </td>
                 </tr>

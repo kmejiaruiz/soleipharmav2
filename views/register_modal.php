@@ -54,7 +54,7 @@
             $("#registerAlert").hide();
 
             $.ajax({
-                url: "index.php?controller=auth&action=registerAjax",
+                url: "/soleipharmav2/auth/registerAjax",
                 type: "POST",
                 data: $(this).serialize(),
                 dataType: "json"

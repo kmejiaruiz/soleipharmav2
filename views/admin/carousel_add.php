@@ -1,11 +1,22 @@
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Agregar Nuevo Slide</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Agregar Nuevo Slide</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Agregar Nuevo Slide</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form action="index.php?controller=carousel&action=save" method="post">
+        <form action="/soleipharmav2/carousel/save" method="post">
             <div class="form-group">
                 <label>Imagen (URL)</label>
                 <input type="text" name="image" class="form-control" required>
@@ -19,7 +30,7 @@
                 <textarea name="description" class="form-control"></textarea>
             </div>
             <button type="submit" class="btn btn-success">Agregar Slide</button>
-            <a href="index.php?controller=carousel&action=index" class="btn btn-secondary">Cancelar</a>
+            <a href="/soleipharmav2/carousel/index" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </section>

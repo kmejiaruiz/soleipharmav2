@@ -21,7 +21,7 @@ class Cart extends BaseModel {
     }
 
     public function getCartItems($session_id) {
-        $stmt = $this->pdo->prepare("SELECT c.*, p.name, p.price, p.image FROM cart c JOIN products p ON c.product_id = p.id WHERE c.session_id = ?");
+        $stmt = $this->pdo->prepare("SELECT c.*, p.name, p.sale_price as price, p.image FROM cart c JOIN products p ON c.product_id = p.id WHERE c.session_id = ?");
         $stmt->execute([$session_id]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

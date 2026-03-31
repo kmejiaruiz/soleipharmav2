@@ -1,12 +1,12 @@
 <?php if ($product): ?>
     <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-md overflow-hidden">
         <div class="md:w-1/2">
-            <img src="assets/img/<?= htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>"
+            <img src="assets/img/<?= htmlspecialchars($product['image'] ?? '') ?>" alt="<?= htmlspecialchars($product['name'] ?? '') ?>"
                 class="w-full h-full object-cover">
         </div>
         <div class="md:w-1/2 p-6">
-            <h2 class="text-3xl font-bold text-gray-800"><?= htmlspecialchars($product['name']) ?></h2>
-            <p class="mt-4 text-gray-700"><?= htmlspecialchars($product['description']) ?></p>
+            <h2 class="text-3xl font-bold text-gray-800"><?= htmlspecialchars($product['name'] ?? '') ?></h2>
+            <p class="mt-4 text-gray-700"><?= htmlspecialchars($product['description'] ?? '') ?></p>
             <p class="mt-4 text-xl font-semibold text-gray-800">
                 $<?= number_format($product['sale_price'], 2) ?>
                 <?php if ($product['tax_percent'] > 0): ?>
@@ -34,7 +34,7 @@
                 <div class="bg-red-400 text-white p-2 rounded mb-4 text-center"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form action="index.php?controller=cart&action=add" method="POST" class="mt-6">
+            <form action="/soleipharmav2/cart/add" method="POST" class="mt-6">
                 <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
                 <div>
                     <label for="quantity" class="block text-gray-700">Cantidad:</label>

@@ -3,19 +3,31 @@
 ?>
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Listado de Pedidos</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Listado de Pedidos</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Listado de Pedidos</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <a href="index.php?controller=order&action=create" class="btn btn-success mb-3">Realizar Pedido</a>
+        <a href="/soleipharmav2/order/create" class="btn btn-success mb-3">Realizar Pedido</a>
         <?php if (!empty($orders)): ?>
-            <table class="table table-bordered">
+            <table class="table table-bordered" id="ordersTable">
                 <thead>
                     <tr>
                         <th>ID Pedido</th>
                         <th>Admin</th>
                         <th>Fecha</th>
+                        <th>Proveedor</th>
                         <th>Status</th>
                         <th>Acciones</th>
                     </tr>
@@ -23,12 +35,25 @@
                 <tbody>
                     <?php foreach ($orders as $order): ?>
                         <tr>
-                            <td><?= htmlspecialchars($order['id']) ?></td>
-                            <td><?= htmlspecialchars($order['admin_name']) ?></td>
-                            <td><?= htmlspecialchars($order['order_date']) ?></td>
-                            <td><?= ucfirst(htmlspecialchars($order['status'])) ?></td>
+                            <td><?= htmlspecialchars($order['id'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($order['admin_name'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($order['order_date'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($order['supplier_name'] ?? '—') ?></td>
                             <td>
-                                <a href="index.php?controller=order&action=edit&id=<?= $order['id'] ?>"
+                                <?php
+                                    $rawStat = $order['status'] ?? '';
+                                    $statusMap = ['pending' => 'Pendiente', 'applied' => 'Aplicado', 'received' => 'Recibido'];
+                                    $translated = $statusMap[$rawStat] ?? ucfirst($rawStat);
+                                    
+                                    $badgeClass = 'secondary';
+                                    if ($rawStat === 'pending') $badgeClass = 'warning';
+                                    if ($rawStat === 'applied') $badgeClass = 'primary';
+                                    if ($rawStat === 'received') $badgeClass = 'success';
+                                ?>
+                                <span class="badge badge-<?= $badgeClass ?> p-2"><?= htmlspecialchars($translated) ?></span>
+                            </td>
+                            <td>
+                                <a href="/soleipharmav2/order/edit?id=<?= $order['id'] ?>"
                                     class="btn btn-primary btn-sm">Ver/Editar</a>
 
                                 <?php if ($order['status'] == 'pending'): ?>
@@ -36,16 +61,19 @@
                                         data-id="<?= $order['id'] ?>">Aplicar</button>
                                 <?php endif; ?>
                                 <?php if (($order['status'] ?? 'pending') == 'applied'): ?>
-                                    <a href="index.php?controller=order&action=goodsEntry&id=<?= $order['id'] ?>"
+                                    <a href="/soleipharmav2/order/goodsEntry?id=<?= $order['id'] ?>"
                                         class="btn btn-info btn-sm">Dar Entrada</a>
                                 <?php endif; ?>
 
 
                                 <?php if ($order['status'] == 'received'): ?>
-                                    <a href="index.php?controller=order&action=goodsEntryReport&id=<?= $order['id'] ?>"
-                                        class="btn btn-info btn-sm">Ver Reporte Entrada</a>
-                                    <!-- <a href="#!" 
-                                        class="btn btn-info btn-sm" onclick="alert('Referencia a Objeto no establecida como Objeto.')">Ver Reporte Entrada</a> -->
+                                    <a href="/soleipharmav2/order/entrySummary?id=<?= $order['id'] ?>"
+                                        class="btn btn-info btn-sm">Ver Entrada</a>
+                                <?php endif; ?>
+
+                                <?php if (in_array(($order['status'] ?? ''), ['applied', 'received'])): ?>
+                                    <a href="/soleipharmav2/order/appliedOrderReport?id=<?= $order['id'] ?>"
+                                        target="_blank" class="btn btn-secondary btn-sm">Ver Boleta (PDF)</a>
                                 <?php endif; ?>
 
                             </td>
@@ -58,23 +86,33 @@
         <?php endif; ?>
     </div>
 </section>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 <script>
     $(document).ready(function () {
+        $('#ordersTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            },
+            order: [[0, 'desc']],
+            columnDefs: [{ orderable: false, targets: -1 }]
+        });
         $(".apply-order").click(function () {
-            var orderId = $(this).data("id");
-            Swal.fire({
+            let currentOrderId = $(this).data("id");
+            
+            window.ActionModal.show({
                 title: 'Aplicar Pedido',
-                text: '¿Está seguro de aplicar este pedido?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, aplicar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
+                description: '¿Está seguro de aplicar este pedido?',
+                fields: [],
+                confirmText: 'Sí, aplicar',
+                onConfirm: function() {
+                    window.ActionModal.hide();
+
                     $.ajax({
-                        url: "index.php?controller=order&action=updateStatus&id=" + orderId,
+                        url: "/soleipharmav2/order/updateStatus?id=" + currentOrderId,
                         type: "POST",
                         dataType: "json",
                         success: function (response) {

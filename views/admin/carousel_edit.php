@@ -1,11 +1,22 @@
 <section class="content-header">
     <div class="container-fluid">
-        <h1>Editar Slide</h1>
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Editar Slide</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Editar Slide</li>
+                </ol>
+            </div>
+        </div>
     </div>
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form action="index.php?controller=carousel&action=update&id=<?= $slide['id'] ?>" method="post">
+        <form action="/soleipharmav2/carousel/update?id=<?= $slide['id'] ?>" method="post">
             <div class="form-group">
                 <label>Imagen (URL)</label>
                 <input type="text" name="image" class="form-control" value="<?= htmlspecialchars($slide['image']) ?>"
@@ -21,7 +32,7 @@
                     class="form-control"><?= htmlspecialchars($slide['description']) ?></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Actualizar Slide</button>
-            <a href="index.php?controller=carousel&action=index" class="btn btn-secondary">Cancelar</a>
+            <a href="/soleipharmav2/carousel/index" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </section>

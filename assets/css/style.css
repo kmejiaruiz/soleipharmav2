@@ -1,0 +1,138 @@
+/* 
+ * Global Corporate Styling (Farmacia Solei Theme)
+ * Primary Color: #6f42c1 (Purple)
+ * Overrides Bootstrap 4 and AdminLTE 3 defaults.
+ */
+
+/* Core Bootstrap Primary Color Overrides */
+.text-primary {
+    color: #6f42c1 !important;
+}
+
+.bg-primary {
+    background-color: #6f42c1 !important;
+}
+
+.btn-primary {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active {
+    background-color: #59359a !important;
+    border-color: #53318f !important;
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.5) !important;
+}
+
+.btn-outline-primary {
+    color: #6f42c1;
+    border-color: #6f42c1;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+    color: #fff !important;
+}
+
+/* Form Controls */
+.form-control:focus {
+    border-color: #8c68cd;
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+
+.custom-select:focus {
+    border-color: #8c68cd;
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+
+/* Pagination */
+.page-item.active .page-link {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+}
+
+.page-link {
+    color: #6f42c1;
+}
+
+.page-link:hover {
+    color: #59359a;
+}
+
+/* AdminLTE Overrides */
+[class*=sidebar-dark-] .sidebar a {
+    color: #c2c7d0;
+}
+
+[class*=sidebar-dark] .brand-link {
+    border-bottom: 1px solid #4f5962;
+    color: #fff !important;
+}
+
+/* Active Sidebar Link (Corporate Purple instead of Blue) */
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active,
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+    background-color: #6f42c1 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24);
+}
+
+/* Info Boxes and Small Boxes (if they use bg-info, maybe we leave them, but if we want to tie them in) */
+.bg-purple {
+    background-color: #6f42c1 !important;
+    color: #fff;
+}
+
+/* Cards */
+.card-primary.card-outline {
+    border-top: 3px solid #6f42c1;
+}
+
+.card-primary:not(.card-outline) > .card-header,
+.card-purple:not(.card-outline) > .card-header {
+    background-color: #6f42c1;
+    color: #fff;
+}
+
+/* Badges */
+.badge-primary {
+    background-color: #6f42c1;
+}
+
+/* SweetAlert 2 Confirm Button Fix */
+.swal2-styled.swal2-confirm {
+    background-color: #6f42c1 !important;
+}
+
+.swal2-styled.swal2-confirm:focus {
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.5) !important;
+}
+
+/* Tables Customization */
+.table-hover tbody tr:hover {
+    background-color: rgba(111, 66, 193, 0.05); /* very light purple hover on tables */
+}
+
+/* DataTables pagination active state */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+.page-item.active .page-link {
+    background-color: #6f42c1 !important;
+    color: white !important;
+    border-color: #6f42c1 !important;
+}
+
+/* Accent for primary elements */
+a {
+    color: #6f42c1;
+}
+a:hover {
+    color: #59359a;
+}
