@@ -91,7 +91,7 @@
         fd.append('password', pw);
         if (csrfMeta) fd.append('csrf_token', csrfMeta.getAttribute('content'));
 
-        fetch('/soleipharmav2/admin/verifySessionPassword', { method: 'POST', body: fd })
+        fetch('/soleipharmav2/cash/verifySessionPassword', { method: 'POST', body: fd })
         .then(r => r.json()).then(data => {
             if (data.success) {
                 isLocked = false;

@@ -61,7 +61,7 @@ class InventoryController extends AdminController
 
         UNION ALL
 
-        -- 2. Salidas por Venta
+        -- 2. Salidas por Venta (excluye ventas POS que ya están en inventory_log con stock)
         SELECT
             o.created_at,
             p.sku,
@@ -78,6 +78,11 @@ class InventoryController extends AdminController
         JOIN products p ON p.id  = oi.product_id
         LEFT JOIN users u ON u.id = o.user_id
         WHERE o.status = 'completado'
+          AND NOT EXISTS (
+              SELECT 1 FROM inventory_log il2
+              WHERE il2.change_type = 'venta'
+                AND il2.description LIKE CONCAT('Venta POS #', LPAD(o.id,6,'0'), '%')
+          )
 
         UNION ALL
 
@@ -113,12 +118,14 @@ class InventoryController extends AdminController
             CASE il.change_type
               WHEN 'stock_increase' THEN 'Ajuste de Inventario (Aumento)'
               WHEN 'stock_decrease' THEN 'Ajuste de Inventario (Disminución)'
+              WHEN 'venta'          THEN 'Venta POS (Cajero)'
               WHEN 'edit'           THEN 'Edición de Oficial de Inventario'
               ELSE il.change_type
             END,
             CASE il.change_type
               WHEN 'stock_increase' THEN 'oficial'
               WHEN 'stock_decrease' THEN 'oficial'
+              WHEN 'venta'          THEN 'venta'
               ELSE 'manual'
             END,
             CASE il.change_type
@@ -128,7 +135,10 @@ class InventoryController extends AdminController
             (il.new_stock - il.previous_stock),
             il.previous_stock,
             il.new_stock,
-            CONCAT('Oficial: ', il.admin_name, IFNULL(CONCAT(' | Nota: ', il.description),'')) ,
+            CASE il.change_type
+              WHEN 'venta' THEN IFNULL(il.description, '')
+              ELSE CONCAT('Oficial: ', il.admin_name, IFNULL(CONCAT(' | Nota: ', il.description),''))
+            END,
             il.admin_name
         FROM inventory_log il
         JOIN products p ON p.id = il.product_id

@@ -238,7 +238,10 @@ if (empty($_SESSION['csrf_token'])) {
             <div class="sidebar">
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
+                    <?php $userRole = $_SESSION['user']['role'] ?? ''; ?>
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+
+                        <?php if ($userRole !== 'cajero'): ?>
                         <li class="nav-item">
                             <a href="/soleipharmav2/admin/index" class="nav-link">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -258,47 +261,46 @@ if (empty($_SESSION['csrf_token'])) {
                             </a>
                         </li>
 
+                        <?php if ($userRole === 'admin'): ?>
                         <li class="nav-item">
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-                                <a href="/soleipharmav2/discard/create" class="nav-link">
-                                    <i class="nav-icon fas fa-trash-alt"></i>
-                                    <p>Solicitar Descarte</p>
-                                </a>
-                            <?php endif; ?>
+                            <a href="/soleipharmav2/discard/create" class="nav-link">
+                                <i class="nav-icon fas fa-trash-alt"></i>
+                                <p>Solicitar Descarte</p>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-                                <a href="/soleipharmav2/discard/myHistory" class="nav-link">
-                                    <i class="nav-icon fas fa-folder-open"></i>
-                                    <p>Mis Descartes</p>
-                                </a>
-                            <?php endif; ?>
+                            <a href="/soleipharmav2/discard/myHistory" class="nav-link">
+                                <i class="nav-icon fas fa-folder-open"></i>
+                                <p>Mis Descartes</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+
+                        <?php if ($userRole === 'superadmin'): ?>
+                        <li class="nav-item">
+                            <a href="/soleipharmav2/discard/listPending" class="nav-link">
+                                <i class="nav-icon fas fa-hourglass-half"></i>
+                                <p>Solicitudes Pendientes</p>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <?php if ($_SESSION['user']['role'] === 'superadmin'): ?>
-                                <a href="/soleipharmav2/discard/listPending" class="nav-link">
-                                    <i class="nav-icon fas fa-hourglass-half"></i>
-                                    <p>Solicitudes Pendientes</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="/soleipharmav2/admin/lockedUsers" class="nav-link bg-danger text-white mt-1 mb-1" style="border-radius: .25rem;">
-                                    <i class="nav-icon fas fa-user-lock"></i>
-                                    <p>Usuarios Bloqueados</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="/soleipharmav2/admin/manageRoles" class="nav-link bg-indigo text-white mt-1 mb-1" style="border-radius: .25rem;">
-                                    <i class="nav-icon fas fa-user-shield"></i>
-                                    <p>Gestión de Usuarios</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="/soleipharmav2/discard/history" class="nav-link">
-                                    <i class="nav-icon fas fa-history"></i>
-                                    <p>Historial de Descartes</p>
-                                </a>
-                            </li>
+                            <a href="/soleipharmav2/admin/lockedUsers" class="nav-link bg-danger text-white mt-1 mb-1" style="border-radius: .25rem;">
+                                <i class="nav-icon fas fa-user-lock"></i>
+                                <p>Usuarios Bloqueados</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/soleipharmav2/admin/manageRoles" class="nav-link bg-indigo text-white mt-1 mb-1" style="border-radius: .25rem;">
+                                <i class="nav-icon fas fa-user-shield"></i>
+                                <p>Gestión de Usuarios</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/soleipharmav2/discard/history" class="nav-link">
+                                <i class="nav-icon fas fa-history"></i>
+                                <p>Historial de Descartes</p>
+                            </a>
+                        </li>
                         <?php endif; ?>
 
                         <li class="nav-item">
@@ -313,7 +315,6 @@ if (empty($_SESSION['csrf_token'])) {
                                 <p>Proveedores</p>
                             </a>
                         </li>
-
                         <li class="nav-item">
                             <a href="/soleipharmav2/carousel/index" class="nav-link">
                                 <i class="nav-icon fas fa-images"></i>
@@ -333,13 +334,56 @@ if (empty($_SESSION['csrf_token'])) {
                                 <p>Reporte de Bodega</p>
                             </a>
                         </li>
-                        <!-- Mi Perfil -->
+                        <?php endif; /* fin bloque no-cajero */ ?>
+
+                        <!-- Caja — solo para cajero, admin, superadmin -->
+                        <?php if (in_array($userRole, ['cajero', 'admin', 'superadmin'])):
+                            try {
+                                global $pdo;
+                                $currentUserId = $_SESSION['user']['id'] ?? 0;
+                                $csOpen = $pdo->prepare("SELECT id FROM cash_sessions WHERE status='open' AND opened_by=? LIMIT 1");
+                                $csOpen->execute([$currentUserId]);
+                                $csOpen = $csOpen->fetch();
+                            } catch (Exception $e) { $csOpen = false; }
+                        ?>
+                        <li class="nav-item" style="margin-top:8px;">
+                            <a href="/soleipharmav2/cash/index" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
+                                <i class="nav-icon fas fa-cash-register" style="color:#28a745;"></i>
+                                <p>
+                                    Caja
+                                    <?php if ($csOpen): ?>
+                                    <span class="badge badge-success float-right" style="font-size:9px;">ABIERTA</span>
+                                    <?php else: ?>
+                                    <span class="badge badge-secondary float-right" style="font-size:9px;">CERRADA</span>
+                                    <?php endif; ?>
+                                </p>
+                            </a>
+                        </li>
+                        <?php if (in_array($userRole, ['admin', 'superadmin'])): ?>
+                        <li class="nav-item">
+                            <a href="/soleipharmav2/cash/history" class="nav-link">
+                                <i class="nav-icon fas fa-history" style="color:#6c9fd8;"></i>
+                                <p>Historial de Caja</p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="/soleipharmav2/cash/pos" class="nav-link">
+                                <i class="nav-icon fas fa-receipt" style="color:#17a2b8;"></i>
+                                <p>Facturar (POS)</p>
+                            </a>
+                        </li>
+                        <?php endif; /* fin bloque caja */ ?>
+
+                        <!-- Mi Perfil — oculto para cajero -->
+                        <?php if ($userRole !== 'cajero'): ?>
                         <li class="nav-item" style="margin-top: 8px;">
                             <a href="/soleipharmav2/admin/myProfile" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
                                 <i class="nav-icon fas fa-user-circle" style="color:#a78bda;"></i>
                                 <p>Mi Perfil</p>
                             </a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </nav>
                 <!-- /.sidebar-menu -->

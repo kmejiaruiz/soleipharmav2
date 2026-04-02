@@ -1,5 +1,9 @@
 <?php
 // config/config.php
+
+// ── Timezone: Managua, Nicaragua (GMT-06:00, no DST) ─────────────────────────
+date_default_timezone_set('America/Managua');
+
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'pharmacy');
 define('DB_USER', 'root');

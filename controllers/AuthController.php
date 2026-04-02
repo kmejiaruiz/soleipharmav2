@@ -102,8 +102,12 @@ class AuthController extends BaseController
                     'branch' => $user['branch'] ?? '',
                 ];
 
-                    // Redirigir a la página principal
-                    header("Location: /soleipharmav2/product/index");
+                    // Redirigir según rol
+                    if ($user['role'] === 'cajero') {
+                        header("Location: /soleipharmav2/cash/index");
+                    } else {
+                        header("Location: /soleipharmav2/product/index");
+                    }
                     exit;
                 } else {
                     // Contraseña incorrecta, incrementamos intentos

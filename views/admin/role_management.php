@@ -57,7 +57,8 @@
                                                 <?php 
                                                     $badgeClass = 'badge-secondary';
                                                     if ($u['role'] === 'superadmin') $badgeClass = 'badge-purple';
-                                                    if ($u['role'] === 'admin') $badgeClass = 'badge-info';
+                                                    if ($u['role'] === 'admin')      $badgeClass = 'badge-info';
+                                                    if ($u['role'] === 'cajero')     $badgeClass = 'badge-success';
                                                 ?>
                                                 <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars(strtoupper($u['role'])) ?></span>
                                             </td>
@@ -129,6 +130,7 @@
                             <label for="crNewRole" class="font-weight-bold">Nuevo Nivel de Acceso:</label>
                             <select id="crNewRole" name="new_role" class="form-control" required>
                                 <option value="user">USER (Básico)</option>
+                                <option value="cajero">CAJERO (Solo Caja)</option>
                                 <option value="admin">ADMIN (Administrador Comercial)</option>
                                 <option value="superadmin">SUPERADMIN (Acceso Total)</option>
                             </select>
