@@ -1,15 +1,15 @@
-<?php // views/admin/inventory_movements.php ?>
+﻿<?php // views/admin/inventory_movements.php ?>
 <section class="content-header">
     <div class="row mb-2">
         <div class="col-sm-6">
             <h1><i class="fas fa-exchange-alt"></i> Movimientos de Inventario</h1>
         </div>
         <div class="col-sm-6 d-flex align-items-center justify-content-end">
-            <a href="/soleipharmav2/inventory/exportCsv" class="btn btn-success btn-sm mr-3">
+            <a href="<?= APP_BASE ?>/inventory/exportCsv" class="btn btn-success btn-sm mr-3">
                 <i class="fas fa-file-csv"></i> Exportar CSV
             </a>
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
                 <li class="breadcrumb-item active">Movimientos de Inventario</li>
             </ol>
         </div>
@@ -23,7 +23,7 @@
         <div class="card card-outline card-secondary mb-3">
             <div class="card-header"><h3 class="card-title"><i class="fas fa-filter"></i> Filtros</h3></div>
             <div class="card-body">
-                <form method="GET" action="/soleipharmav2/inventory/movements" class="row align-items-end">
+                <form method="GET" action="<?= APP_BASE ?>/inventory/movements" class="row align-items-end">
                     <div class="col-md-3">
                         <label>Producto / SKU</label>
                         <input type="text" name="product" class="form-control form-control-sm"
@@ -50,7 +50,7 @@
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button class="btn btn-primary btn-sm mr-1"><i class="fas fa-search"></i> Filtrar</button>
-                        <a href="/soleipharmav2/inventory/movements" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+                        <a href="<?= APP_BASE ?>/inventory/movements" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
                     </div>
                 </form>
             </div>

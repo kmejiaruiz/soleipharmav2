@@ -6,7 +6,7 @@
                 <h1><i class="fas fa-history"></i> Historial de Caja</h1>
             </div>
             <div class="col-sm-5 text-right">
-                <a href="/soleipharmav2/cash/index" class="btn btn-sm btn-success">
+                <a href="<?= APP_BASE ?>/cash/index" class="btn btn-sm btn-success">
                     <i class="fas fa-cash-register"></i> Ir a Caja
                 </a>
             </div>
@@ -40,40 +40,88 @@
     </div>
     <?php endif; ?>
 
-    <!-- Filters -->
-    <div class="card card-outline card-primary mb-3">
-        <div class="card-body py-2">
-            <form method="GET" action="/soleipharmav2/cash/history" class="form-inline">
-                <label class="mr-2"><i class="fas fa-user"></i> Cajero:</label>
-                <select name="user_id" class="form-control form-control-sm mr-3">
-                    <option value="0">— Todos —</option>
-                    <?php foreach ($users as $u): ?>
-                    <option value="<?= $u['id'] ?>" <?= $filterUser == $u['id'] ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($u['username']) ?> (<?= htmlspecialchars(ucwords(strtolower($u['full_name']))) ?>)
-                    </option>
-                    <?php endforeach; ?>
-                </select>
+    <!-- ══ PANEL DE FILTROS (hero) ═══════════════════════════════════════════ -->
+    <div id="histFilterPanel">
+        <div class="hist-filter-hero">
+            <div class="text-center mb-4">
+                <div class="hist-filter-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <h4 class="hist-filter-title">Consulta de Historial de Caja</h4>
+                <p class="text-muted mb-0">Selecciona los filtros y presiona <strong>Ver Historial</strong></p>
+            </div>
 
-                <label class="mr-2"><i class="fas fa-calendar"></i> Fecha:</label>
-                <input type="date" name="date" class="form-control form-control-sm mr-3"
-                       value="<?= htmlspecialchars($filterDate) ?>">
-
-                <button type="submit" class="btn btn-sm btn-primary mr-2">
-                    <i class="fas fa-filter"></i> Filtrar
-                </button>
-                <a href="/soleipharmav2/cash/history" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-times"></i> Limpiar
-                </a>
+            <form id="histFilterForm" method="GET" action="<?= APP_BASE ?>/cash/history">
+                <div class="hist-filter-grid" style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; max-width:580px; margin:0 auto;">
+                    <div class="hist-filter-field" style="flex:1; min-width:200px;">
+                        <label style="display:block; font-weight:600; margin-bottom:0.4rem;">
+                            <i class="fas fa-calendar-alt"></i> Fecha desde <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="date_from" id="histDateFrom" class="form-control"
+                               value="<?= htmlspecialchars($filterDateFrom ?? '') ?>" required>
+                    </div>
+                    <div class="hist-filter-field" style="flex:1; min-width:200px;">
+                        <label style="display:block; font-weight:600; margin-bottom:0.4rem;">
+                            <i class="fas fa-calendar-check"></i> Fecha hasta <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="date_to" id="histDateTo" class="form-control"
+                               value="<?= htmlspecialchars($filterDateTo ?? '') ?>" required>
+                    </div>
+                </div>
+                <div class="hist-filter-actions" style="margin-top:1.5rem;">
+                    <button type="submit" id="btnHistSearch" class="hist-btn-search">
+                        <i class="fas fa-search"></i> Ver Historial
+                    </button>
+                    <?php if (!empty($filterDateFrom)): ?>
+                    <a href="<?= APP_BASE ?>/cash/history" class="hist-btn-clear">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                    <?php endif; ?>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Sessions list -->
-    <?php if (empty($sessions)): ?>
-    <div class="card"><div class="card-body text-center text-muted py-5">
-        <i class="fas fa-inbox fa-3x mb-3"></i><br>No se encontraron sesiones con los filtros seleccionados.
-    </div></div>
-    <?php else: ?>
+    <!-- ══ LOADER ════════════════════════════════════════════════════════════ -->
+    <div id="histLoader" style="display:none;">
+        <div class="hist-loader-inner">
+            <div class="hist-loader-spinner">
+                <div class="hist-loader-ring"></div>
+                <i class="fas fa-cash-register hist-loader-icon"></i>
+            </div>
+            <div class="hist-loader-text">Cargando historial...</div>
+            <div class="hist-loader-sub">Esto tardará solo un momento</div>
+        </div>
+    </div>
+
+    <!-- ══ RESULTADOS ════════════════════════════════════════════════════════ -->
+    <?php $hasResults = !empty($sessions) && !empty($filterDateFrom); ?>
+
+
+    <div id="histResultsPanel" style="opacity:0;display:none;">
+
+        <!-- Barra de contexto con filtro activo + botón cambiar -->
+        <div class="hist-results-bar mb-3">
+            <div class="hist-results-info">
+                <i class="fas fa-filter"></i>
+                <?php if ($filterDateFrom): ?>
+                    <strong><?= date('d/m/Y', strtotime($filterDateFrom)) ?></strong>
+                    <?php if ($filterDateTo && $filterDateTo !== $filterDateFrom): ?>
+                        &nbsp;&mdash;&nbsp;<strong><?= date('d/m/Y', strtotime($filterDateTo)) ?></strong>
+                    <?php endif; ?>
+                <?php else: ?>
+                    Todos los registros
+                <?php endif; ?>
+                &mdash;
+                <strong><?= count($sessions) ?></strong> sesión<?= count($sessions) !== 1 ? 'es' : '' ?> encontrada<?= count($sessions) !== 1 ? 's' : '' ?>
+            </div>
+            <button id="btnChangeFilter" class="hist-btn-change">
+                <i class="fas fa-sliders-h"></i> Cambiar filtro
+            </button>
+        </div>
+
+    <!-- ══ Lista de sesiones ════════════════════════════════════════════════ -->
+    <?php if ($hasResults): ?>
 
     <?php foreach ($sessions as $s):
         $isOpen         = $s['status'] === 'open';
@@ -102,7 +150,7 @@
             </h5>
             <div>
                 <?php if (!$isActive): ?>
-                <a href="/soleipharmav2/cash/closingPdf/<?= $s['id'] ?>" target="_blank"
+                <a href="<?= APP_BASE ?>/cash/closingPdf/<?= $s['id'] ?>" target="_blank"
                    class="btn btn-xs btn-outline-dark mr-1" title="Reporte de cierre">
                     <i class="fas fa-file-pdf"></i> Cierre PDF
                 </a>
@@ -110,13 +158,6 @@
                 <button class="btn btn-xs btn-danger mr-1"
                         onclick="openCloseModal(<?= $s['id'] ?>, '<?= htmlspecialchars(addslashes(ucwords(strtolower($s['opener_name'])))) ?>', <?= $expected ?>)">
                     <i class="fas fa-times-circle"></i> Confirmar Cierre
-                </button>
-                <?php endif; ?>
-                <?php if (in_array($_SESSION['user']['role'] ?? '', ['admin','superadmin'])): ?>
-                <button class="btn btn-xs btn-outline-info mr-1"
-                        onclick="openSalesModal(<?= $s['id'] ?>, '<?= htmlspecialchars(addslashes($openedDt->format('d/m/Y'))) ?>', <?= $isActive ? 'true' : 'false' ?>)"
-                        title="Ver ventas de esta sesión">
-                    <i class="fas fa-receipt"></i> Ventas
                 </button>
                 <?php endif; ?>
                 <button class="btn btn-xs btn-outline-secondary" type="button"
@@ -203,7 +244,7 @@
                         <td><?= htmlspecialchars($w['reason'] ?? '—') ?></td>
                         <td class="text-right font-weight-bold">C$ <?= number_format($w['total_amount'], 2) ?></td>
                         <td>
-                            <a href="/soleipharmav2/cash/withdrawalPdf/<?= $w['id'] ?>" target="_blank"
+                            <a href="<?= APP_BASE ?>/cash/withdrawalPdf/<?= $w['id'] ?>" target="_blank"
                                class="btn btn-xs btn-outline-secondary">
                                 <i class="fas fa-file-pdf"></i>
                             </a>
@@ -224,70 +265,177 @@
             <div class="card-footer text-muted text-center py-2 small">Sin retiros en esta sesión.</div>
         </div>
         <?php endif; ?>
+
+        <?php
+        // Ventas de la sesión (solo para admin/superadmin)
+        if (in_array($_SESSION['user']['role'] ?? '', ['admin', 'superadmin'])):
+            // Sesión activa: mostrar TODAS las ventas (completadas + anuladas) con botón anular
+            // Sesión cerrada: mostrar SOLO ventas anuladas (para trazabilidad)
+            $statusFilter = $isActive
+                ? "AND o.status IN ('completado','anulado')"
+                : "AND o.status = 'anulado'";
+
+            $stmtOrds = $pdo->prepare(
+                "SELECT o.id, o.total, o.discount, o.pay_method, o.client_name, o.status, o.created_at,
+                        CONCAT(u.first_name,' ',u.last_name) AS cashier
+                 FROM orders o JOIN users u ON u.id = o.user_id
+                 WHERE o.user_id = ? AND o.created_at >= ?
+                   AND o.created_at <= IFNULL(?, NOW())
+                   $statusFilter
+                 ORDER BY o.created_at DESC"
+            );
+            $stmtOrds->execute([$s['opened_by'], $s['opened_at'], $s['closed_at'] ?? null]);
+            $sessionOrders = $stmtOrds->fetchAll(PDO::FETCH_ASSOC);
+        endif;
+        ?>
+        <?php if (!empty($sessionOrders) && in_array($_SESSION['user']['role'] ?? '', ['admin','superadmin'])): ?>
+        <div class="card-footer p-0 border-top-0">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th colspan="7" class="py-1 px-3 text-muted small">
+                            <?php if ($isActive): ?>
+                                <i class="fas fa-receipt"></i> Ventas de esta sesión
+                            <?php else: ?>
+                                <i class="fas fa-ban text-danger"></i> Ventas anuladas en esta sesión
+                            <?php endif; ?>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Recibo</th>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        <th>Método</th>
+                        <th class="text-right">Total</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($sessionOrders as $ord):
+                    $ordDt = new DateTime($ord['created_at']);
+                    $ordDt->setTimezone(new DateTimeZone('America/Managua'));
+                    $isAnulado = $ord['status'] === 'anulado';
+                    $payIcon = match($ord['pay_method'] ?? 'efectivo') {
+                        'tarjeta' => '💳', 'transferencia' => '🏦', default => '💵'
+                    };
+                ?>
+                <tr class="<?= $isAnulado ? 'table-danger' : '' ?>">
+                    <td><strong>#<?= str_pad($ord['id'], 6, '0', STR_PAD_LEFT) ?></strong></td>
+                    <td><small><?= $ordDt->format('H:i') ?></small></td>
+                    <td><small><?= htmlspecialchars($ord['client_name'] ?? 'Consumidor Final') ?></small></td>
+                    <td><small><?= $payIcon ?> <?= ucfirst($ord['pay_method'] ?? 'efectivo') ?></small></td>
+                    <td class="text-right <?= $isAnulado ? 'text-danger' : 'text-success font-weight-bold' ?>">
+                        <?= $isAnulado ? '<s>' : '' ?>C$ <?= number_format($ord['total'], 2) ?><?= $isAnulado ? '</s>' : '' ?>
+                    </td>
+                    <td>
+                        <?php if ($isAnulado): ?>
+                        <span class="badge badge-danger">Anulada</span>
+                        <?php else: ?>
+                        <span class="badge badge-success">Completada</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-right">
+                        <a href="<?= APP_BASE ?>/cash/posReceipt/<?= $ord['id'] ?>" target="_blank"
+                           class="btn btn-xs btn-outline-secondary" title="Ver recibo">
+                            <i class="fas fa-print"></i>
+                        </a>
+                        <?php if ($isActive && !$isAnulado): ?>
+                        <button class="btn btn-xs btn-outline-danger ml-1"
+                                onclick="voidSale(<?= $ord['id'] ?>, '#<?= str_pad($ord['id'],6,'0',STR_PAD_LEFT) ?>')"
+                                title="Anular venta">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
     </div>
     <?php endforeach; ?>
+
+    <?php else: ?>
+        <div class="card"><div class="card-body text-center text-muted py-5">
+            <i class="fas fa-inbox fa-3x mb-3"></i><br>
+            No se encontraron sesiones con los filtros seleccionados para el rango indicado.
+        </div></div>
     <?php endif; ?>
+
+    <?php if ($totalPages > 1 && $hasResults): ?>
+    <?php
+        $baseUrl = APP_BASE . '/cash/history?date_from=' . urlencode($filterDateFrom)
+                 . '&date_to=' . urlencode($filterDateTo);
+        $window = 2; // páginas a cada lado del actual
+    ?>
+    <nav aria-label="Paginación de sesiones" class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <small class="text-muted">
+            Mostrando página <strong><?= $page ?></strong> de <strong><?= $totalPages ?></strong>
+            &mdash; <?= $totalSessions ?> sesión<?= $totalSessions !== 1 ? 'es' : '' ?> en total
+        </small>
+        <ul class="pagination pagination-sm mb-0">
+            <!-- Anterior -->
+            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= $baseUrl ?>&page=<?= $page - 1 ?>">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+
+            <?php if ($page - $window > 1): ?>
+                <li class="page-item">
+                    <a class="page-link" href="<?= $baseUrl ?>&page=1">1</a>
+                </li>
+                <?php if ($page - $window > 2): ?>
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php for ($p = max(1, $page - $window); $p <= min($totalPages, $page + $window); $p++): ?>
+                <li class="page-item <?= $p === $page ? 'active' : '' ?>">
+                    <a class="page-link" href="<?= $baseUrl ?>&page=<?= $p ?>"><?= $p ?></a>
+                </li>
+            <?php endfor; ?>
+
+            <?php if ($page + $window < $totalPages): ?>
+                <?php if ($page + $window < $totalPages - 1): ?>
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                <?php endif; ?>
+                <li class="page-item">
+                    <a class="page-link" href="<?= $baseUrl ?>&page=<?= $totalPages ?>"><?= $totalPages ?></a>
+                </li>
+            <?php endif; ?>
+
+            <!-- Siguiente -->
+            <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= $baseUrl ?>&page=<?= $page + 1 ?>">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <?php endif; ?>
+
+    </div><!-- /#histResultsPanel -->
+
 </div>
 </section>
 
-<!-- ── Modal: Ventas de una sesión ──────────────────────────────────────────── -->
-<div class="modal fade" id="sessionSalesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white py-2">
-                <h5 class="modal-title">
-                    <i class="fas fa-receipt mr-1"></i>
-                    Ventas — Sesión <span id="ssmDate"></span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-            </div>
-            <div class="modal-body p-0">
-                <div id="ssmLoading" class="text-center py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
-                    <p class="text-muted mt-2">Cargando ventas…</p>
-                </div>
-                <div id="ssmContent" class="d-none">
-                    <div id="ssmEmpty" class="text-center text-muted py-5 d-none">
-                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                        <p class="mt-2">No hay ventas anuladas en esta sesión.</p>
-                    </div>
-                    <table class="table table-sm table-hover mb-0" id="ssmTable" style="display:none">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Recibo</th>
-                                <th>Hora</th>
-                                <th>Cliente</th>
-                                <th>Método</th>
-                                <th class="text-right">Total</th>
-                                <th>Estado</th>
-                                <th class="text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ssmBody"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer py-2">
-                <button class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ── Modal: Cierre de caja por admin (denominaciones — no usa ActionModal por UI compleja) -->
-<div class="modal fade" id="adminCloseCashModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
+<div class="modal micromodal-slide" id="adminCloseCashModal" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+        <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="acmTitle" style="max-width:700px;width:95%;">
+            <header class="modal__header" style="background:#dc3545;color:#fff;border-radius:4px 4px 0 0;padding:16px 20px;margin:-30px -30px 20px;">
+                <h5 class="modal__title" id="acmTitle" style="color:#fff;font-size:1rem;">
                     <i class="fas fa-times-circle"></i>
                     Cerrar Caja de <span id="acmCajero"></span>
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-            </div>
+                <button class="modal__close" aria-label="Cerrar" data-micromodal-close style="color:#fff;"></button>
+            </header>
             <form id="adminCloseCashForm">
                 <input type="hidden" id="acmSessionId" name="session_id">
-                <div class="modal-body">
+                <main class="modal__content">
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
                         <strong>¿Está seguro que desea cerrar esta caja?</strong><br>
@@ -320,13 +468,13 @@
                         </p>
                         <p class="mb-0" id="acmDiffLabel"></p>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger" id="acmBtnConfirm">
+                </main>
+                <footer class="modal__footer" style="justify-content:flex-end;gap:8px;">
+                    <button type="button" class="modal__btn" data-micromodal-close aria-label="Cancelar">Cancelar</button>
+                    <button type="submit" class="modal__btn" id="acmBtnConfirm" style="background:#dc3545;color:#fff;">
                         <i class="fas fa-check"></i> Confirmar Cierre
                     </button>
-                </div>
+                </footer>
             </form>
         </div>
     </div>
@@ -345,7 +493,7 @@ function openCloseModal(sessionId, cajeroName, expected) {
     document.querySelectorAll('.acm-subtotal').forEach(s => { s.textContent = '= C$0'; });
     document.getElementById('acmTotal').textContent = 'C$ 0.00';
     document.getElementById('acmDiffLabel').textContent = '';
-    $('#adminCloseCashModal').modal('show');
+    MicroModal.show('adminCloseCashModal');
 }
 
 document.querySelectorAll('.acm-denom-input').forEach(inp => {
@@ -383,11 +531,11 @@ document.getElementById('adminCloseCashForm').addEventListener('submit', async f
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando...';
 
     const fd  = new FormData(this);
-    const res = await fetch('/soleipharmav2/cash/closeCash', { method: 'POST', body: fd });
+    const res = await fetch('<?= APP_BASE ?>/cash/closeCash', { method: 'POST', body: fd });
     const data = await res.json();
 
     if (data.success) {
-        $('#adminCloseCashModal').modal('hide');
+        MicroModal.close('adminCloseCashModal');
         Swal.fire({
             icon: 'success',
             title: 'Caja Cerrada',
@@ -420,7 +568,7 @@ function voidSale(orderId, label) {
             fd.append('order_id', orderId);
             fd.append('password', values.password);
 
-            const res  = await fetch('/soleipharmav2/cash/voidSale', { method: 'POST', body: fd });
+            const res  = await fetch('<?= APP_BASE ?>/cash/voidSale', { method: 'POST', body: fd });
             const data = await res.json();
 
             // Cerrar ActionModal ANTES de mostrar Swal (patrón estándar del sistema)
@@ -436,3 +584,175 @@ function voidSale(orderId, label) {
     });
 }
 </script>
+
+<script>
+// Re-init Micromodal para nuevos modales en esta página
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof MicroModal !== 'undefined') MicroModal.init({ disableScroll: true });
+});
+</script>
+
+<script>
+// ═════════════════════════════════════════════════════════════════
+// HISTORIAL DE CAJA — Animación Hero Filter
+// ═════════════════════════════════════════════════════════════════
+(function () {
+    'use strict';
+
+    var filterPanel  = document.getElementById('histFilterPanel');
+    var loader       = document.getElementById('histLoader');
+    var resultsPanel = document.getElementById('histResultsPanel');
+    var filterForm   = document.getElementById('histFilterForm');
+    var btnChange    = document.getElementById('btnChangeFilter');
+
+    var hasResults   = resultsPanel !== null;
+    var fromSubmit   = sessionStorage.getItem('hist_from_submit') === '1';
+    var ANIM_MS      = 350;
+
+    // ── Utilidades de transición ──────────────────────────────────────────────
+    function fadeOut(el, ms, cb) {
+        el.style.transition = 'opacity ' + ms + 'ms ease, transform ' + ms + 'ms ease';
+        el.style.opacity    = '0';
+        el.style.transform  = 'translateY(-24px)';
+        setTimeout(function () {
+            el.style.display = 'none';
+            el.style.transition = '';
+            el.style.transform  = '';
+            if (cb) cb();
+        }, ms);
+    }
+
+    function fadeIn(el, ms, delay) {
+        delay = delay || 0;
+        el.style.opacity   = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.display   = 'block';
+        setTimeout(function () {
+            el.style.transition = 'opacity ' + ms + 'ms ease, transform ' + ms + 'ms ease';
+            el.style.opacity    = '1';
+            el.style.transform  = 'translateY(0)';
+            setTimeout(function () { el.style.transition = ''; }, ms);
+        }, delay);
+    }
+
+    function showLoader() {
+        loader.style.opacity   = '0';
+        loader.style.display   = 'flex';
+        loader.style.transform = 'scale(0.9)';
+        setTimeout(function () {
+            loader.style.transition = 'opacity 300ms ease, transform 300ms ease';
+            loader.style.opacity    = '1';
+            loader.style.transform  = 'scale(1)';
+        }, 30);
+    }
+
+    function hideLoader(cb) {
+        loader.style.transition = 'opacity 300ms ease';
+        loader.style.opacity    = '0';
+        setTimeout(function () {
+            loader.style.display    = 'none';
+            loader.style.transition = '';
+            if (cb) cb();
+        }, 320);
+    }
+
+    // ── Estado inicial al cargar la página ──────────────────────────────────────
+    if (fromSubmit) {
+        // Viene de un submit — animar: loader → resultados
+        sessionStorage.removeItem('hist_from_submit');
+        filterPanel.style.display = 'none';
+        loader.style.display      = 'flex';
+        loader.style.opacity      = '1';
+        loader.style.transform    = 'scale(1)';
+
+        setTimeout(function () {
+            hideLoader(function () {
+                fadeIn(resultsPanel, 500, 80);
+            });
+        }, 900); // Loader visible 900ms
+
+    } else if (hasResults) {
+        // Navegación directa con parámetros en URL
+        filterPanel.style.display = 'none';
+        resultsPanel.style.display  = 'block';
+        resultsPanel.style.opacity  = '0';
+        resultsPanel.style.transform = 'translateY(20px)';
+        setTimeout(function () {
+            resultsPanel.style.transition = 'opacity 500ms ease, transform 500ms ease';
+            resultsPanel.style.opacity    = '1';
+            resultsPanel.style.transform  = 'translateY(0)';
+        }, 200);
+
+    } else {
+        // Sin resultados: mostrar panel de filtros
+        filterPanel.style.display = 'block';
+        filterPanel.style.opacity = '0';
+        setTimeout(function () {
+            filterPanel.style.transition = 'opacity 400ms ease';
+            filterPanel.style.opacity    = '1';
+            setTimeout(function () { filterPanel.style.transition = ''; }, 420);
+        }, 50);
+    }
+
+    // ── Interceptar submit del formulario ───────────────────────────────────
+    if (filterForm) {
+        filterForm.addEventListener('submit', function (e) {
+            var dateFrom = document.getElementById('histDateFrom').value;
+            var dateTo   = document.getElementById('histDateTo').value;
+
+            if (!dateFrom || !dateTo) {
+                e.preventDefault();
+                var emptyField = !dateFrom
+                    ? document.getElementById('histDateFrom')
+                    : document.getElementById('histDateTo');
+                emptyField.focus();
+                emptyField.classList.add('is-invalid');
+                setTimeout(function () { emptyField.classList.remove('is-invalid'); }, 2500);
+                return;
+            }
+            if (dateFrom > dateTo) {
+                e.preventDefault();
+                document.getElementById('histDateFrom').classList.add('is-invalid');
+                document.getElementById('histDateTo').classList.add('is-invalid');
+                setTimeout(function () {
+                    document.getElementById('histDateFrom').classList.remove('is-invalid');
+                    document.getElementById('histDateTo').classList.remove('is-invalid');
+                }, 2500);
+                return;
+            }
+
+            e.preventDefault();
+
+            // Marcar que viene de submit para la próxima carga
+            sessionStorage.setItem('hist_from_submit', '1');
+
+            // Animar botón
+            var btn = document.getElementById('btnHistSearch');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Buscando...';
+            }
+
+            // Fade out del panel de filtros
+            fadeOut(filterPanel, ANIM_MS, function () {
+                showLoader();
+                // Navegar tras mostrar el loader
+                setTimeout(function () {
+                    filterForm.submit();
+                }, 600);
+            });
+        });
+    }
+
+    // ── Botón "Cambiar filtro" ─────────────────────────────────────────────
+    if (btnChange) {
+        btnChange.addEventListener('click', function () {
+            fadeOut(resultsPanel, ANIM_MS, function () {
+                fadeIn(filterPanel, 400, 60);
+            });
+        });
+    }
+
+})();
+</script>
+

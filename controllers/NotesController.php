@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once 'AdminController.php';
 
 /**
@@ -14,13 +14,13 @@ class NotesController extends AdminController
 
     public function index()
     {
-        header('Location: /soleipharmav2/admin/index');
+        header('Location: ' . APP_BASE . '/admin/index');
         exit;
     }
 
     public function add()
     {
-        header('Location: /soleipharmav2/admin/index');
+        header('Location: ' . APP_BASE . '/admin/index');
         exit;
     }
 

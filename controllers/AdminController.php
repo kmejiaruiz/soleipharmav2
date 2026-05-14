@@ -48,18 +48,30 @@ class AdminController extends BaseController
              LIMIT 10"
         )->fetchAll(PDO::FETCH_ASSOC);
 
-        // Productos con bajo stock
+        // Productos con bajo stock (filtrado por sucursal)
+        $currentBranch = defined('BRANCH') && BRANCH !== '' ? BRANCH : '';
         $lowStockProducts = $pdo->prepare(
-            "SELECT id,name,stock FROM products WHERE stock<5"
+            "SELECT p.id, p.name, COALESCE(bps.stock, 0) AS stock
+             FROM products p
+             LEFT JOIN branch_product_stock bps
+                    ON bps.product_id = p.id AND bps.branch = ?
+             WHERE COALESCE(bps.stock, 0) < 5 AND p.available = 1"
         );
-        $lowStockProducts->execute();
+        $lowStockProducts->execute([$currentBranch]);
         $lowStockProducts = $lowStockProducts->fetchAll(PDO::FETCH_ASSOC);
 
-        // *** Productos para el panel (evita Undefined $products) ***
+
+        // *** Productos para el panel (stock de la sucursal actual) ***
+        $currentBranch = defined('BRANCH') && BRANCH !== '' ? BRANCH : '';
         $products = $pdo->query(
-            "SELECT id,name,cost,sale_price,stock,available 
-             FROM products"
+            "SELECT p.id, p.name, p.cost, p.sale_price,
+                    COALESCE(bps.stock, 0) AS stock,
+                    p.available
+             FROM products p
+             LEFT JOIN branch_product_stock bps
+                    ON bps.product_id = p.id AND bps.branch = '" . addslashes($currentBranch) . "'"
         )->fetchAll(PDO::FETCH_ASSOC);
+
 
         // Alertas de usuarios bloqueados (solo para superadmin)
         $lockedUsersAlerts = [];
@@ -76,7 +88,24 @@ class AdminController extends BaseController
             }
         }
 
-        // Verificar si el usuario actual fue ascendido recientemente
+        // Traslados entre sucursales pendientes para ESTA sucursal
+        $pendingTransfers = [];
+        if (!empty($currentBranch) && in_array($_SESSION['user']['role'] ?? '', ['admin', 'superadmin'])) {
+            $stmtPT = $pdo->prepare("
+                SELECT bt.id, bt.from_branch, bt.created_at,
+                       COUNT(bti.id) AS item_count,
+                       SUM(bti.quantity_sent) AS total_units,
+                       CONCAT(COALESCE(u.first_name,''),' ',COALESCE(u.last_name,'')) AS creator_name
+                FROM branch_transfers bt
+                JOIN branch_transfer_items bti ON bti.transfer_id = bt.id
+                JOIN users u ON u.id = bt.created_by
+                WHERE bt.to_branch = ? AND bt.status = 'pendiente'
+                GROUP BY bt.id
+                ORDER BY bt.created_at DESC
+            ");
+            $stmtPT->execute([$currentBranch]);
+            $pendingTransfers = $stmtPT->fetchAll(PDO::FETCH_ASSOC);
+        }
         $roleUpgradeData = null;
         if (isset($_SESSION['user']['id'])) {
             $stmtUpg = $pdo->prepare("SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as admin_name FROM role_change_logs r JOIN users u ON r.changed_by = u.id WHERE r.target_user = ? AND r.acknowledged = 0 ORDER BY r.id DESC LIMIT 1");
@@ -112,14 +141,15 @@ class AdminController extends BaseController
         }
 
         $this->renderAdmin('admin/admin_panel', [
-            'dailySales' => $dailySales,
-            'topProducts' => $topProducts,
-            'lowStockProducts' => $lowStockProducts,
-            'products' => $products,
+            'dailySales'                       => $dailySales,
+            'topProducts'                      => $topProducts,
+            'lowStockProducts'                 => $lowStockProducts,
+            'products'                         => $products,
             'lockedUsersAlerts_ParaSuperadmin' => $lockedUsersAlerts,
-            'unreadNotificationsDashboard' => $unreadNotifications,
-            'roleUpgradeData' => $roleUpgradeData,
-            'last7DaysSales' => $last7DaysSales
+            'unreadNotificationsDashboard'     => $unreadNotifications,
+            'roleUpgradeData'                  => $roleUpgradeData,
+            'last7DaysSales'                   => $last7DaysSales,
+            'pendingTransfers'                 => $pendingTransfers,
         ]);
     }
 
@@ -188,7 +218,7 @@ class AdminController extends BaseController
     public function invoice()
     {
         // Módulo de boletas eliminado. Redirigir al Dashboard.
-        header('Location: /soleipharmav2/admin/index');
+        header('Location: ' . APP_BASE . '/admin/index');
         exit;
     }
 
@@ -344,7 +374,7 @@ class AdminController extends BaseController
         if (!$product) {
             $_SESSION['flash'] = "Producto no encontrado.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: /soleipharmav2/admin/index");
+            header("Location: " . APP_BASE . "/admin/index");
             exit;
         }
         $this->renderAdmin('admin/edit_product', ['product' => $product]);
@@ -459,15 +489,22 @@ class AdminController extends BaseController
     {
         global $pdo;
         $lowStockThreshold = 5;
-        $stmtLow = $pdo->prepare("SELECT * FROM products WHERE stock < ?");
-        $stmtLow->execute([$lowStockThreshold]);
+        $currentBranch = defined('BRANCH') && BRANCH !== '' ? BRANCH : '';
+        $stmtLow = $pdo->prepare(
+            "SELECT p.id, p.name, p.sku, COALESCE(bps.stock, 0) AS stock
+             FROM products p
+             LEFT JOIN branch_product_stock bps
+                    ON bps.product_id = p.id AND bps.branch = ?
+             WHERE COALESCE(bps.stock, 0) < ? AND p.available = 1"
+        );
+        $stmtLow->execute([$currentBranch, $lowStockThreshold]);
         $lowStockProducts = $stmtLow->fetchAll(PDO::FETCH_ASSOC);
         $this->renderAdmin('admin/low_stock', ['lowStockProducts' => $lowStockProducts]);
     }
     // El aumento de stock se gestiona exclusivamente a través del módulo de Pedidos
     public function increaseStock($id = null)
     {
-        header('Location: /soleipharmav2/order/create');
+        header('Location: ' . APP_BASE . '/order/create');
         exit;
     }
 
@@ -484,7 +521,7 @@ class AdminController extends BaseController
     public function manageRoles()
     {
         if ($_SESSION['user']['role'] !== 'superadmin') {
-            header('Location: /soleipharmav2/admin/index');
+            header('Location: ' . APP_BASE . '/admin/index');
             exit;
         }
 
@@ -689,7 +726,7 @@ class AdminController extends BaseController
     public function roleChangeHistory()
     {
         if ($_SESSION['user']['role'] !== 'superadmin') {
-            header('Location: /soleipharmav2/admin/index');
+            header('Location: ' . APP_BASE . '/admin/index');
             exit;
         }
 

@@ -1,4 +1,4 @@
-<?php // views/admin/supplier_form.php
+﻿<?php // views/admin/supplier_form.php
 $isEdit = isset($supplier) && $supplier !== null;
 $title  = $isEdit ? 'Editar Proveedor' : 'Nuevo Proveedor';
 ?>
@@ -9,8 +9,8 @@ $title  = $isEdit ? 'Editar Proveedor' : 'Nuevo Proveedor';
         </div>
         <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-                <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="/soleipharmav2/supplier/index">Proveedores</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/supplier/index">Proveedores</a></li>
                 <li class="breadcrumb-item active"><?= $title ?></li>
             </ol>
         </div>
@@ -94,7 +94,7 @@ $title  = $isEdit ? 'Editar Proveedor' : 'Nuevo Proveedor';
                         </form>
                     </div>
                     <div class="card-footer text-right">
-                        <a href="/soleipharmav2/supplier/index" class="btn btn-secondary mr-2">
+                        <a href="<?= APP_BASE ?>/supplier/index" class="btn btn-secondary mr-2">
                             <i class="fas fa-times"></i> Cancelar
                         </a>
                         <button type="button" id="btnSaveSupplier" class="btn btn-primary">
@@ -111,7 +111,7 @@ $title  = $isEdit ? 'Editar Proveedor' : 'Nuevo Proveedor';
 <script>
 $(document).ready(function() {
     const isEdit = <?= $isEdit ? 'true' : 'false' ?>;
-    const url = isEdit ? '/soleipharmav2/supplier/update' : '/soleipharmav2/supplier/store';
+    const url = isEdit ? '<?= APP_BASE ?>/supplier/update' : '<?= APP_BASE ?>/supplier/store';
 
     $('#btnSaveSupplier').click(function() {
         const btn = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
@@ -120,9 +120,9 @@ $(document).ready(function() {
                 Swal.fire({ icon: 'success', title: '¡Listo!', text: r.message, timer: 1800, showConfirmButton: false })
                     .then(() => {
                         if (!isEdit && r.id) {
-                            window.location = '/soleipharmav2/supplier/catalog?id=' + r.id;
+                            window.location = '<?= APP_BASE ?>/supplier/catalog?id=' + r.id;
                         } else {
-                            window.location = '/soleipharmav2/supplier/index';
+                            window.location = '<?= APP_BASE ?>/supplier/index';
                         }
                     });
             } else {

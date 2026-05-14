@@ -1,4 +1,4 @@
-<!-- views/register_modal.php -->
+﻿<!-- views/register_modal.php -->
 <?php if (session_status() === PHP_SESSION_NONE)
     session_start(); ?>
 
@@ -54,7 +54,7 @@
             $("#registerAlert").hide();
 
             $.ajax({
-                url: "/soleipharmav2/auth/registerAjax",
+                url: "<?= APP_BASE ?>/auth/registerAjax",
                 type: "POST",
                 data: $(this).serialize(),
                 dataType: "json"

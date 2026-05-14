@@ -1,4 +1,4 @@
-<section class="content-header">
+﻿<section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
@@ -7,7 +7,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Agregar Producto</li>
                 </ol>
             </div>
@@ -16,9 +16,9 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form id="addProductForm" action="/soleipharmav2/admin/saveProduct" method="post">
+        <form id="addProductForm" action="<?= APP_BASE ?>/admin/saveProduct" method="post">
             <div class="form-group">
-                <label>Nombre</label>
+                <label>Nombre <span class="text-danger">*</span></label>
                 <input type="text" name="name" class="form-control" required>
             </div>
             <div class="form-group">
@@ -26,30 +26,8 @@
                 <textarea name="description" class="form-control" required></textarea>
             </div>
             <div class="form-group">
-                <label>Costo (Compra)</label>
-                <input type="number" step="0.01" name="cost" id="cost" class="form-control" required value="0.00">
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>% Utilidad</label>
-                        <input type="number" step="0.01" name="utility_percent" id="utility_percent" class="form-control" required value="30.00">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>% Impuesto</label>
-                        <input type="number" step="0.01" name="tax_percent" id="tax_percent" class="form-control" required value="15.00">
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Precio Venta (Calculado: Costo + Utilidad)</label>
-                <input type="number" step="0.01" name="price" id="price" class="form-control" required readonly>
-            </div>
-            <div class="form-group">
-                <label>Stock</label>
-                <input type="number" name="stock" class="form-control" required>
+                <label>Stock inicial</label>
+                <input type="number" name="stock" class="form-control" required value="0" min="0">
             </div>
             <div class="form-group">
                 <label>Imagen (URL)</label>
@@ -59,9 +37,11 @@
                 <input type="checkbox" name="available" class="form-check-input" id="available" checked>
                 <label class="form-check-label" for="available">Disponible para venta</label>
             </div>
-            <div class="form-group" id="reasonGroup" style="display: none;">
-                <label for="reason_unavailable">Motivo de no disponibilidad</label>
-                <textarea name="reason_unavailable" id="reason_unavailable" class="form-control"></textarea>
+            <div class="alert alert-info py-2" style="font-size:13px;">
+                <i class="fas fa-info-circle"></i>
+                El <strong>Costo, IVA y Utilidad</strong> se configuran desde
+                <a href="<?= APP_BASE ?>/product/updateCostsForm" target="_blank">Costos e IVA de Productos</a>
+                una vez creado el producto.
             </div>
             <!-- Campos ocultos para credenciales -->
             <input type="hidden" name="confirm_username" id="confirmUsername">
@@ -118,7 +98,7 @@ $("#addProductForm").on('submit', function(e) {
                             title: 'Producto agregado',
                             text: response.message
                         }).then(() => {
-                            window.location.href = "/soleipharmav2/admin/index";
+                            window.location.href = "<?= APP_BASE ?>/admin/index";
                         });
                     } else {
                         Swal.fire({
@@ -139,19 +119,4 @@ $("#addProductForm").on('submit', function(e) {
         }
     });
 });
-</script>
-<script>
-    // Auto-calculo de precio
-    function calculatePrice() {
-        const cost = parseFloat($('#cost').val()) || 0;
-        const utility = parseFloat($('#utility_percent').val()) || 0;
-        // Precio base = Costo * (1 + Utilidad)
-        const price = cost * (1 + (utility / 100));
-        $('#price').val(price.toFixed(2));
-    }
-    
-    $('#cost, #utility_percent').on('input', calculatePrice);
-    
-    // Calcular inicial
-    calculatePrice();
-</script>
+</script>

@@ -1,4 +1,4 @@
-<!-- views/forgot_password_modal.php -->
+﻿<!-- views/forgot_password_modal.php -->
 <!-- Step 1: Ingresa usuario → genera enlace de recuperación -->
 <div x-data="{
     step: 'form',
@@ -15,7 +15,7 @@
         const fd = new FormData();
         fd.append('username', this.username);
         try {
-            const r = await fetch('/soleipharmav2/auth/requestReset', { method:'POST', body: fd });
+            const r = await fetch('<?= APP_BASE ?>/auth/requestReset', { method:'POST', body: fd });
             const data = await r.json();
             if (data.success) {
                 this.resetUrl = data.reset_url;

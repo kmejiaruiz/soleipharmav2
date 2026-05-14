@@ -1,4 +1,4 @@
-<!-- views/login_modal.php -->
+﻿<!-- views/login_modal.php -->
 <h2 class="text-3xl font-bold text-white mb-4 text-center">Iniciar Sesión</h2>
 <?php if(isset($error) && !isset($modalAlert)): ?>
     <div class="bg-red-400 text-white p-2 rounded mb-4 text-center"><?= $error ?></div>
@@ -23,7 +23,7 @@
     </div>
 </div>
 <?php endif; ?>
-<form action="/soleipharmav2/auth/login" method="POST" class="space-y-4">
+<form action="<?= APP_BASE ?>/auth/login" method="POST" class="space-y-4">
     <div>
         <label for="username" class="block text-white font-semibold">Usuario</label>
         <input type="text" name="username" id="username" required class="w-full px-4 py-2 rounded focus:outline-none focus:ring focus:border-purple-300">

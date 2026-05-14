@@ -1,4 +1,4 @@
-<!-- views/cart_modal.php
+﻿<!-- views/cart_modal.php
 <h2 class="text-3xl font-bold text-white mb-4 text-center">Tu Carrito</h2>
 <?php if(!empty($cartItems)): ?>
 <table class="w-full bg-white rounded-lg shadow-md mb-4">
@@ -24,7 +24,7 @@
             <td class="py-2 px-3">$<?= $item['price'] ?></td>
             <td class="py-2 px-3">$<?= number_format($total, 2) ?></td>
             <td class="py-2 px-3">
-                <a href="/soleipharmav2/cart/remove?id=<?= $item['id'] ?>" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
+                <a href="<?= APP_BASE ?>/cart/remove?id=<?= $item['id'] ?>" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
                     Eliminar
                 </a>
             </td>

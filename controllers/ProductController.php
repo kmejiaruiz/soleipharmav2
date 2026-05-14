@@ -24,23 +24,27 @@ class ProductController extends BaseController
     // Listado con paginación y carousel
     public function index()
     {
-        // Paginación
-        $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
-        $products = $this->productModel->getAll($limit, $offset);
-        $totalProducts = $this->productModel->getTotalCount();
-        $totalPages = ceil($totalProducts / $limit);
+        // Si el usuario no está logueado, redirigir a la página de login
+        if (!isset($_SESSION['user'])) {
+            header("Location: " . APP_BASE . "/auth/showLogin");
+            exit;
+        }
 
-        // Slides carousel
-        $slides = $this->carouselModel->getAllSlides();
-
-        $this->render('product_list', [
-            'products' => $products,
-            'slides' => $slides,
-            'currentPage' => $page,
-            'totalPages' => $totalPages
-        ]);
+        // Landing page deshabilitada — redirigir al panel según rol
+        switch ($_SESSION['user']['role']) {
+            case 'superadmin':
+            case 'admin':
+            case 'user':
+                header("Location: " . APP_BASE . "/admin/index");
+                break;
+            case 'cajero':
+                header("Location: " . APP_BASE . "/cash/index");
+                break;
+            default:
+                header("Location: " . APP_BASE . "/admin/index");
+                break;
+        }
+        exit;
     }
 
     // Detalle de producto (para ver detalle y agregar al carrito)
@@ -60,7 +64,7 @@ class ProductController extends BaseController
         $product = $this->productModel->getById($id);
         if (!$product) {
             $_SESSION['flash'] = "Producto no encontrado.";
-            header("Location: /soleipharmav2/product/index");
+            header("Location: " . APP_BASE . "/product/index");
             exit;
         }
         $this->render('product_edit', ['product' => $product]);
@@ -72,7 +76,7 @@ class ProductController extends BaseController
         // Validar rol
         if ($_SESSION['user']['role'] !== 'superadmin') {
             $_SESSION['flash'] = "Sin permisos para editar.";
-            header("Location: /soleipharmav2/product/index");
+            header("Location: " . APP_BASE . "/product/index");
             exit;
         }
 
@@ -89,7 +93,7 @@ class ProductController extends BaseController
         $this->productModel->updateSalePrice($id, $salePrice);
 
         $_SESSION['flash'] = "Producto actualizado correctamente.";
-        header("Location: /soleipharmav2/product/index");
+        header("Location: " . APP_BASE . "/product/index");
         exit;
     }
 
@@ -113,22 +117,42 @@ class ProductController extends BaseController
             exit;
         }
 
-        $costs = $_POST['costs'] ?? [];
+        global $pdo;
+
+        $costs      = $_POST['costs']      ?? [];
+        $taxes      = $_POST['taxes']      ?? [];       // IVA % por producto
+        $utilities  = $_POST['utilities']  ?? [];       // Utilidad % por producto
+        $available  = $_POST['available']  ?? [];       // 1 = disponible, 0 = no disponible
+
+        $updated = 0;
         foreach ($costs as $id => $cost) {
+            $id      = intval($id);
             $product = $this->productModel->getById($id);
-            if ($product) {
-                $utility = $product['utility_percent'] ?? 0;
-                $tax = $product['tax_percent'] ?? 0;
-                $newCost = floatval($cost);
-                
-                $this->productModel->updateCostTax($id, $newCost, $utility, $tax);
-                
-                $newSalePrice = round($newCost * (1 + $utility / 100), 2);
-                $this->productModel->updateSalePrice($id, $newSalePrice);
-            }
+            if (!$product) continue;
+
+            $newCost    = floatval($cost);
+            // Usa lo enviado; si no viene, mantiene el valor actual en BD
+            $newTax     = isset($taxes[$id])     ? floatval($taxes[$id])     : floatval($product['tax_percent']     ?? 0);
+            $newUtil    = isset($utilities[$id])  ? floatval($utilities[$id]) : floatval($product['utility_percent'] ?? 0);
+            $newAvail   = isset($available[$id])  ? intval($available[$id])   : intval($product['available']         ?? 1);
+
+            // Formula que el JS también usa: costo × (1 + util%)
+            $newSalePrice = round($newCost * (1 + $newUtil / 100), 2);
+
+            $this->productModel->updateCostTax($id, $newCost, $newUtil, $newTax);
+            $this->productModel->updateSalePrice($id, $newSalePrice);
+
+            // Actualizar disponibilidad
+            $pdo->prepare("UPDATE products SET available = ? WHERE id = ?")
+                ->execute([$newAvail, $id]);
+
+            $updated++;
         }
-        
-        echo json_encode(['success' => true, 'message' => 'Costos actualizados correctamente.']);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "{$updated} producto(s) actualizado(s) correctamente.",
+        ]);
         exit;
     }
 

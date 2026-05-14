@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once 'AdminController.php';
 require_once 'config/config.php';
 require_once 'dompdf/autoload.inc.php';
@@ -27,7 +27,7 @@ class SalesReportController extends AdminController
         if (empty($startDate) || empty($endDate)) {
             $_SESSION['flash'] = "Debe seleccionar ambas fechas para filtrar el reporte.";
             $_SESSION['flash_type'] = "alert";
-            header("Location: /soleipharmav2/salesReport/index");
+            header("Location: " . APP_BASE . "/salesReport/index");
             exit;
         }
 

@@ -1,4 +1,4 @@
-<section class="content-header">
+﻿<section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
@@ -7,7 +7,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Listado de Notas de Crédito/Débito</li>
                 </ol>
             </div>
@@ -16,7 +16,7 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-        <a href="/soleipharmav2/notes/add" class="btn btn-success mb-3">Crear Nueva Nota</a>
+        <a href="<?= APP_BASE ?>/notes/add" class="btn btn-success mb-3">Crear Nueva Nota</a>
         <?php if (!empty($notes)): ?>
             <table class="table table-bordered">
                 <thead>
@@ -96,7 +96,7 @@
                     window.ActionModal.hide();
 
                     $.ajax({
-                        url: "/soleipharmav2/notes/cancel?id=" + currentNoteId,
+                        url: "<?= APP_BASE ?>/notes/cancel?id=" + currentNoteId,
                         type: "POST",
                         data: {
                             confirm_username: username,

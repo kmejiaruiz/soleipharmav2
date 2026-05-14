@@ -3,6 +3,14 @@
 $bodegaLabel  = $bodegaLabels[$bodega] ?? $bodega;
 $totalSistema = array_sum(array_column($reportRows, 'existencia_sistema'));
 $reportNum    = date('YmdHis');
+
+// Detectar bodega sin stock: reporte generado pero stock total = 0 
+// (aplica a debito y merma donde el stock puede estar todo en cero)
+$bodegaSinStock = $generated && $bodega !== 'sucursal' && $totalSistema == 0;
+// Para sucursal, detectar si no hay ningún producto con stock > 0
+if ($generated && $bodega === 'leon' && $totalSistema == 0) {
+    $bodegaSinStock = true;
+}
 ?>
 
 <!-- Botón imprimir (oculto al imprimir) -->
@@ -25,7 +33,7 @@ $reportNum    = date('YmdHis');
         <div class="card card-outline card-primary mb-4">
             <div class="card-header"><h3 class="card-title"><i class="fas fa-filter"></i> Parámetros del Reporte</h3></div>
             <div class="card-body">
-                <form method="GET" action="/soleipharmav2/inventory/report" class="row align-items-end">
+                <form method="GET" action="<?= APP_BASE ?>/inventory/report" class="row align-items-end">
                     <div class="col-md-5">
                         <label><span class="text-danger">*</span> Proveedor</label>
                         <select name="supplier_id" class="form-control" required>
@@ -43,7 +51,7 @@ $reportNum    = date('YmdHis');
                             <option value="">— Seleccione bodega —</option>
                             <option value="merma"  <?= $bodega === 'merma'  ? 'selected' : '' ?>>Merma / Descarte</option>
                             <option value="debito" <?= $bodega === 'debito' ? 'selected' : '' ?>>Bodega de Débito — Devoluciones al Proveedor</option>
-                            <option value="leon"   <?= $bodega === 'leon'   ? 'selected' : '' ?>>Sucursal León</option>
+                            <option value="leon"   <?= $bodega === 'leon'   ? 'selected' : '' ?>><?= htmlspecialchars(defined('BRANCH') && BRANCH !== '' ? BRANCH : 'Sucursal León') ?></option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -56,6 +64,26 @@ $reportNum    = date('YmdHis');
         </div>
     </div>
 </section>
+
+
+<?php if (!empty($reportError)): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    Swal.fire({
+        title: 'Reporte no puede ser ejecutado',
+        html:  'Sin datos para reporte.',
+        icon:  'warning',
+        confirmButtonText: 'Entendido'
+    }).then(function () {
+        // Limpiar los campos del formulario
+        var sel = document.querySelector('select[name="supplier_id"]');
+        var bod = document.querySelector('select[name="bodega"]');
+        if (sel) sel.value = '';
+        if (bod) bod.value = '';
+    });
+});
+</script>
+<?php endif; ?>
 
 <?php if ($generated): ?>
 <!-- ═══════════════════════════════════════ REPORTE IMPRIMIBLE ════════════════ -->
@@ -166,6 +194,50 @@ $reportNum    = date('YmdHis');
         Farmacia Solei &mdash; SoleiPharma &mdash; <?= date('d/m/Y H:i:s') ?>
     </div>
 </div>
+<?php endif; ?>
+
+<!-- ── Micromodal: Bodega sin stock ─────────────────────────────────── -->
+<div class="modal micromodal-slide" id="modal-bodega-vacia" aria-hidden="true">
+    <div class="modal__overlay" tabindex="-1">
+        <div class="modal__container" role="dialog" aria-modal="true"
+             aria-labelledby="modal-bodega-vacia-title"
+             style="max-width:420px;text-align:center;">
+            <div style="padding:8px 0 16px;">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#ffc107;" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h2 class="modal__title" id="modal-bodega-vacia-title"
+                style="font-size:1.1rem;margin-bottom:10px;">
+                Sin datos en la bodega
+            </h2>
+            <div class="modal__content">
+                <p style="margin:0;">
+                    La <strong><?= htmlspecialchars($bodegaLabel) ?></strong>
+                    no tiene unidades registradas para el proveedor seleccionado.
+                    <br><br>
+                    No es posible generar el reporte de conteo.
+                </p>
+            </div>
+            <div style="margin-top:18px;">
+                <button class="btn btn-warning btn-sm" onclick="MicroModal.close('modal-bodega-vacia')">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php if ($bodegaSinStock): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof MicroModal !== 'undefined') {
+        MicroModal.show('modal-bodega-vacia', { disableFocus: true });
+    }
+});
+</script>
 <?php endif; ?>
 
 <style>

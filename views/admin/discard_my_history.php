@@ -1,11 +1,11 @@
-<div class="row mb-2">
+﻿<div class="row mb-2">
     <div class="col-sm-6">
         <h1>Mis Descartes</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
             <li class="breadcrumb-item active">Mis Descartes</li>
         </ol>
     </div>
@@ -58,7 +58,7 @@
                         <td><?= $r['decision_at'] ? date('d/m/Y H:i', strtotime($r['decision_at'])) : '-' ?></td>
                         <td>
                             <?php if ($r['status'] === 'in_revision'): ?>
-                                <a href="/soleipharmav2/discard/edit?id=<?= $r['id'] ?>" class="btn btn-sm btn-primary">
+                                <a href="<?= APP_BASE ?>/discard/edit?id=<?= $r['id'] ?>" class="btn btn-sm btn-primary">
                                     <i class="fas fa-edit"></i> Corregir
                                 </a>
                             <?php else: ?>

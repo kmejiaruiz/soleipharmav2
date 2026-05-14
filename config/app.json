@@ -1,0 +1,12 @@
+{
+    "db_host": "localhost",
+    "db_port": "3306",
+    "db_name": "pharmacy",
+    "db_user": "root",
+    "db_pass": "",
+    "company_name": "Farmacia Solei",
+    "branch": "Sucursal Managua",
+    "timezone": "America\/Managua",
+    "low_stock": 9,
+    "setup_at": "2026-04-20 05:21:58"
+}

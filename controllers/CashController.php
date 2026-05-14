@@ -1,6 +1,7 @@
 <?php
 require_once 'BaseController.php';
 require_once 'config/config.php';
+require_once __DIR__ . '/../helpers/BranchStock.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Dompdf\Dompdf;
@@ -13,7 +14,7 @@ class CashController extends BaseController
     {
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], $this->allowedRoles)) {
-            header('Location: /soleipharmav2/admin/index');
+            header('Location: ' . APP_BASE . '/admin/index');
             exit;
         }
     }
@@ -23,7 +24,7 @@ class CashController extends BaseController
         $role = $_SESSION['user']['role'] ?? '';
         if (!in_array($role, ['admin', 'superadmin'])) {
             $_SESSION['flash_error'] = 'Solo admin o superadmin puede realizar esta acción.';
-            header('Location: /soleipharmav2/cash/dashboard');
+            header('Location: ' . APP_BASE . '/cash/dashboard');
             exit;
         }
     }
@@ -123,9 +124,9 @@ class CashController extends BaseController
     {
         $session = $this->getOpenSession();
         if ($session) {
-            header('Location: /soleipharmav2/cash/dashboard');
+            header('Location: ' . APP_BASE . '/cash/dashboard');
         } else {
-            header('Location: /soleipharmav2/cash/open');
+            header('Location: ' . APP_BASE . '/cash/open');
         }
         exit;
     }
@@ -135,7 +136,7 @@ class CashController extends BaseController
     {
         $session = $this->getOpenSession();
         if ($session) {
-            header('Location: /soleipharmav2/cash/dashboard');
+            header('Location: ' . APP_BASE . '/cash/dashboard');
             exit;
         }
         $this->renderAdmin('admin/cash_open', []);
@@ -156,11 +157,12 @@ class CashController extends BaseController
         $userId = $_SESSION['user']['id'];
 
         $stmt = $pdo->prepare(
-            "INSERT INTO cash_sessions (opened_by, opening_amount, notes, status) VALUES (?, ?, ?, 'open')"
+            "INSERT INTO cash_sessions (opened_by, opening_amount, notes, branch, status) VALUES (?, ?, ?, ?, 'open')"
         );
-        $stmt->execute([$userId, $openingAmount, $notes]);
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+        $stmt->execute([$userId, $openingAmount, $notes, $branch]);
 
-        echo json_encode(['success' => true, 'redirect' => '/soleipharmav2/cash/dashboard']);
+        echo json_encode(['success' => true, 'redirect' => APP_BASE . '/cash/dashboard']);
         exit;
     }
 
@@ -170,7 +172,7 @@ class CashController extends BaseController
         global $pdo;
         $session = $this->getOpenSession();
         if (!$session) {
-            header('Location: /soleipharmav2/cash/open');
+            header('Location: ' . APP_BASE . '/cash/open');
             exit;
         }
 
@@ -229,7 +231,7 @@ class CashController extends BaseController
     {
         $session = $this->getOpenSession();
         if (!$session) {
-            header('Location: /soleipharmav2/cash/open');
+            header('Location: ' . APP_BASE . '/cash/open');
             exit;
         }
         $this->renderAdmin('admin/cash_withdrawal', ['session' => $session]);
@@ -240,10 +242,10 @@ class CashController extends BaseController
     {
         $session = $this->getOpenSession();
         if (!$session) {
-            header('Location: /soleipharmav2/cash/open'); exit;
+            header('Location: ' . APP_BASE . '/cash/open'); exit;
         }
         if ($session['status'] === 'pending_close') {
-            header('Location: /soleipharmav2/cash/dashboard'); exit;
+            header('Location: ' . APP_BASE . '/cash/dashboard'); exit;
         }
         $this->renderAdmin('admin/cash_pos', ['session' => $session]);
     }
@@ -255,15 +257,22 @@ class CashController extends BaseController
         header('Content-Type: application/json');
         $q = trim($_GET['q'] ?? '');
         if (strlen($q) < 2) { echo json_encode([]); exit; }
+
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+
         $stmt = $pdo->prepare(
-            "SELECT id, name, sku, sale_price, stock, tax_percent
-             FROM products
-             WHERE available = 1 AND stock > 0
-               AND (name LIKE ? OR sku LIKE ?)
-             ORDER BY name LIMIT 20"
+            "SELECT p.id, p.name, p.sku, p.sale_price, p.tax_percent,
+                    COALESCE(bps.stock, 0) AS stock
+             FROM products p
+             LEFT JOIN branch_product_stock bps
+                    ON bps.product_id = p.id AND bps.branch = ?
+             WHERE p.available = 1
+               AND COALESCE(bps.stock, 0) > 0
+               AND (p.name LIKE ? OR p.sku LIKE ?)
+             ORDER BY p.name LIMIT 20"
         );
         $like = "%$q%";
-        $stmt->execute([$like, $like]);
+        $stmt->execute([$branch, $like, $like]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         exit;
     }
@@ -292,6 +301,8 @@ class CashController extends BaseController
             exit;
         }
 
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+
         // Validate & build items
         $lineItems = [];
         $subtotal  = 0;
@@ -302,14 +313,15 @@ class CashController extends BaseController
             $price     = floatval($item->price ?? 0);
             if ($productId <= 0 || $qty <= 0 || $price < 0) continue;
 
-            $stmtP = $pdo->prepare("SELECT id, name, sale_price, stock FROM products WHERE id = ? AND available = 1");
+            $stmtP = $pdo->prepare("SELECT id, name, sale_price FROM products WHERE id = ? AND available = 1");
             $stmtP->execute([$productId]);
             $product = $stmtP->fetch(PDO::FETCH_ASSOC);
-            if (!$product || $product['stock'] < $qty) {
-                echo json_encode(['success' => false, 'message' => "Stock insuficiente para: {$product['name']}"]);
+            $branchStock = $product ? BranchStock::get($pdo, $productId, $branch) : 0;
+            if (!$product || $branchStock < $qty) {
+                echo json_encode(['success' => false, 'message' => "Stock insuficiente en {$branch} para: {$product['name']} (disponible: {$branchStock})"]);
                 exit;
             }
-            $lineItems[] = ['product' => $product, 'qty' => $qty, 'price' => $price];
+            $lineItems[] = ['product' => $product, 'qty' => $qty, 'price' => $price, 'branchStock' => $branchStock];
             $subtotal   += $price * $qty;
         }
 
@@ -338,35 +350,35 @@ class CashController extends BaseController
         try {
             // Create order with all new fields
             $pdo->prepare(
-                "INSERT INTO orders (user_id, total, discount, pay_method, amount_paid, client_name, status, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, 'completado', NOW())"
-            )->execute([$userId, $total, $discountAmount, $payMethod, $amountPaid, $clientName]);
+                "INSERT INTO orders (user_id, total, discount, pay_method, amount_paid, client_name, branch, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'completado', NOW())"
+            )->execute([$userId, $total, $discountAmount, $payMethod, $amountPaid, $clientName, $branch]);
             $orderId = $pdo->lastInsertId();
 
-            // Insert items, deduct stock & log inventory movement
             $adminName = trim(($_SESSION['user']['first_name'] ?? '') . ' ' . ($_SESSION['user']['last_name'] ?? ''))
                          ?: ($_SESSION['user']['username'] ?? 'sistema');
 
             foreach ($lineItems as $li) {
-                $prevStock = intval($li['product']['stock']);
+                $pid       = $li['product']['id'];
+                $prevStock = BranchStock::get($pdo, $pid, $branch);
                 $newStock  = $prevStock - $li['qty'];
 
                 $pdo->prepare(
                     "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)"
-                )->execute([$orderId, $li['product']['id'], $li['qty'], $li['price']]);
+                )->execute([$orderId, $pid, $li['qty'], $li['price']]);
 
-                $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?")
-                    ->execute([$li['qty'], $li['product']['id']]);
+                // Descontar del stock de la sucursal
+                BranchStock::adjust($pdo, $pid, $branch, -$li['qty']);
 
                 $pdo->prepare(
                     "INSERT INTO inventory_log
-                     (product_id, admin_id, admin_name, change_type, previous_stock, new_stock, description)
-                     VALUES (?, ?, ?, 'venta', ?, ?, ?)"
+                     (product_id, admin_id, admin_name, branch, change_type, previous_stock, new_stock, description)
+                     VALUES (?, ?, ?, ?, 'venta', ?, ?, ?)"
                 )->execute([
-                    $li['product']['id'], $userId, $adminName,
+                    $pid, $userId, $adminName, $branch,
                     $prevStock, $newStock,
                     "Venta POS #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) .
-                    " | Cajero: $adminName | {$li['product']['name']} x{$li['qty']}"
+                    " | Cajero: $adminName | Suc: {$branch} | {$li['product']['name']} x{$li['qty']}"
                 ]);
             }
 
@@ -385,7 +397,7 @@ class CashController extends BaseController
             'discount'  => $discountAmount,
             'total'     => $total,
             'change'    => $change,
-            'receipt_url' => "/soleipharmav2/cash/posReceipt/$orderId",
+            'receipt_url' => APP_BASE . "/cash/posReceipt/$orderId",
         ]);
         exit;
     }
@@ -608,34 +620,24 @@ class CashController extends BaseController
         global $pdo;
         header('Content-Type: application/json');
 
+        $role = $_SESSION['user']['role'] ?? '';
+        if (!in_array($role, ['admin', 'superadmin'])) {
+            echo json_encode(['success' => false, 'message' => 'Sin permisos.']);
+            exit;
+        }
+
         $orderId  = intval($_POST['order_id'] ?? 0);
-        $username = trim($_POST['username']  ?? '');
-        $password = $_POST['password']       ?? '';
+        $password = $_POST['password'] ?? '';
+        $userId   = $_SESSION['user']['id'] ?? 0;
 
-        if (!$orderId || !$username || !$password) {
-            echo json_encode(['success' => false, 'message' => 'Datos incompletos.']);
+        // Verify admin password
+        $stmtPw = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmtPw->execute([$userId]);
+        $hash = $stmtPw->fetchColumn();
+        if (!$hash || !password_verify($password, $hash)) {
+            echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
             exit;
         }
-
-        // Verify by username + password (must be admin or superadmin)
-        $stmtPw = $pdo->prepare(
-            "SELECT id, password, role, CONCAT(first_name,' ',last_name) AS full_name
-             FROM users WHERE username = ? AND status = 'active'"
-        );
-        $stmtPw->execute([$username]);
-        $authUser = $stmtPw->fetch(PDO::FETCH_ASSOC);
-
-        if (!$authUser || !password_verify($password, $authUser['password'])) {
-            echo json_encode(['success' => false, 'message' => 'Usuario o contraseña incorrectos.']);
-            exit;
-        }
-        if (!in_array($authUser['role'], ['admin', 'superadmin'])) {
-            echo json_encode(['success' => false, 'message' => 'El usuario no tiene permisos de administrador.']);
-            exit;
-        }
-
-        $adminName = trim($authUser['full_name']) ?: $username;
-        $userId    = $authUser['id'];
 
         // Load order
         $stmtO = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND status = 'completado'");
@@ -643,6 +645,14 @@ class CashController extends BaseController
         $order = $stmtO->fetch(PDO::FETCH_ASSOC);
         if (!$order) {
             echo json_encode(['success' => false, 'message' => 'Venta no encontrada o ya anulada.']);
+            exit;
+        }
+
+        // ── Restrict annulment to TODAY only ─────────────────────────────────
+        $orderDate = (new DateTime($order['created_at']))->format('Y-m-d');
+        $today     = (new DateTime())->format('Y-m-d');
+        if ($orderDate !== $today) {
+            echo json_encode(['success' => false, 'message' => 'Solo se pueden anular ventas realizadas el día de hoy.']);
             exit;
         }
 
@@ -654,25 +664,29 @@ class CashController extends BaseController
         $stmtI->execute([$orderId]);
         $items = $stmtI->fetchAll(PDO::FETCH_ASSOC);
 
+        $adminName = trim(($_SESSION['user']['first_name'] ?? '') . ' ' . ($_SESSION['user']['last_name'] ?? ''))
+                     ?: ($_SESSION['user']['username'] ?? 'admin');
+
         $pdo->beginTransaction();
         try {
+            // Mark order as anulado
             $pdo->prepare("UPDATE orders SET status = 'anulado' WHERE id = ?")->execute([$orderId]);
 
             foreach ($items as $it) {
-                $stmtCur = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
-                $stmtCur->execute([$it['product_id']]);
-                $prevStock = intval($stmtCur->fetchColumn());
-                $newStock  = $prevStock + $it['quantity'];
+                $pid = $it['product_id'];
+                // Restaurar en la sucursal del usuario que anuló
+                $branchVoid = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+                $prevStock  = BranchStock::get($pdo, $pid, $branchVoid);
+                $newStock   = $prevStock + $it['quantity'];
 
-                $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?")
-                    ->execute([$it['quantity'], $it['product_id']]);
+                BranchStock::adjust($pdo, $pid, $branchVoid, +$it['quantity']);
 
                 $pdo->prepare(
                     "INSERT INTO inventory_log
-                     (product_id, admin_id, admin_name, change_type, previous_stock, new_stock, description)
-                     VALUES (?, ?, ?, 'stock_increase', ?, ?, ?)"
+                     (product_id, admin_id, admin_name, branch, change_type, previous_stock, new_stock, description)
+                     VALUES (?, ?, ?, ?, 'stock_increase', ?, ?, ?)"
                 )->execute([
-                    $it['product_id'], $userId, $adminName,
+                    $pid, $userId, $adminName, $branchVoid,
                     $prevStock, $newStock,
                     "Anulación Venta POS #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) .
                     " | Autorizado por: $adminName | {$it['name']} x{$it['quantity']}"
@@ -690,47 +704,55 @@ class CashController extends BaseController
         exit;
     }
 
-    // ── sessionOrders: GET — JSON list of orders for a cash session (admin only) ──
-    public function sessionOrders($sessionId)
+    // ── saleItems: GET — return items for a given order (admin only) ──────────
+    public function saleItems()
     {
         global $pdo;
         header('Content-Type: application/json');
-        $this->requireAdminRole();
 
-        $sessionId = intval($sessionId);
+        $role = $_SESSION['user']['role'] ?? '';
+        if (!in_array($role, ['admin', 'superadmin'])) {
+            echo json_encode(['success' => false, 'message' => 'Sin permisos.']);
+            exit;
+        }
 
-        // Load session bounds
-        $stmtS = $pdo->prepare("SELECT opened_by, opened_at, closed_at, status FROM cash_sessions WHERE id = ?");
-        $stmtS->execute([$sessionId]);
-        $sess = $stmtS->fetch(PDO::FETCH_ASSOC);
-        if (!$sess) { echo json_encode([]); exit; }
+        $orderId = intval($_GET['order_id'] ?? 0);
+        if (!$orderId) {
+            echo json_encode(['success' => false, 'message' => 'order_id requerido.']);
+            exit;
+        }
 
-        $isActive = in_array($sess['status'], ['open', 'pending_close']);
-        $statusFilter = $isActive ? "IN ('completado','anulado')" : "= 'anulado'";
-
+        // Load order header
         $stmtO = $pdo->prepare(
             "SELECT o.id, o.total, o.discount, o.pay_method, o.client_name, o.status, o.created_at,
-                    CONCAT(u.first_name,' ',u.last_name) AS cashier
-             FROM orders o JOIN users u ON u.id = o.user_id
-             WHERE o.user_id = ? AND o.created_at >= ?
-               AND o.created_at <= IFNULL(?, NOW())
-               AND o.status $statusFilter
-             ORDER BY o.created_at DESC"
+                    CONCAT(u.first_name,' ',u.last_name) AS cashier_name
+             FROM orders o
+             JOIN users u ON u.id = o.user_id
+             WHERE o.id = ?"
         );
-        $stmtO->execute([$sess['opened_by'], $sess['opened_at'], $sess['closed_at'] ?? null]);
-        $orders = $stmtO->fetchAll(PDO::FETCH_ASSOC);
-
-        // Format dates
-        foreach ($orders as &$o) {
-            $dt = new DateTime($o['created_at']);
-            $dt->setTimezone(new DateTimeZone('America/Managua'));
-            $o['time_fmt']   = $dt->format('H:i');
-            $o['id_fmt']     = '#' . str_pad($o['id'], 6, '0', STR_PAD_LEFT);
-            $o['can_void']   = $isActive && $o['status'] === 'completado';
+        $stmtO->execute([$orderId]);
+        $order = $stmtO->fetch(PDO::FETCH_ASSOC);
+        if (!$order) {
+            echo json_encode(['success' => false, 'message' => 'Venta no encontrada.']);
+            exit;
         }
-        unset($o);
 
-        echo json_encode(['orders' => $orders, 'is_active' => $isActive]);
+        // Load items
+        $stmtI = $pdo->prepare(
+            "SELECT oi.id, oi.quantity, oi.price, p.name, p.sku
+             FROM order_items oi
+             JOIN products p ON p.id = oi.product_id
+             WHERE oi.order_id = ?
+             ORDER BY p.name"
+        );
+        $stmtI->execute([$orderId]);
+        $items = $stmtI->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'order'   => $order,
+            'items'   => $items,
+        ]);
         exit;
     }
 
@@ -891,7 +913,7 @@ class CashController extends BaseController
 
         echo json_encode([
             'success' => true,
-            'pdf_url' => '/soleipharmav2/cash/closingPdf/' . $session['id'],
+            'pdf_url' => APP_BASE . '/cash/closingPdf/' . $session['id'],
         ]);
         exit;
     }
@@ -969,14 +991,32 @@ class CashController extends BaseController
         global $pdo;
         $this->requireAdminRole();
 
-        $filterUser = intval($_GET['user_id'] ?? 0);
-        $filterDate = trim($_GET['date'] ?? '');
+        $filterDateFrom  = trim($_GET['date_from'] ?? '');
+        $filterDateTo    = trim($_GET['date_to']   ?? '');
+        if (empty($filterDateFrom) && !empty($_GET['date'])) {
+            $filterDateFrom = $filterDateTo = trim($_GET['date']);
+        }
+        $page    = max(1, intval($_GET['page'] ?? 1));
+        $perPage = 5;
+
+        $currentBranch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
 
         $where = ["1=1"];
         $params = [];
-        if ($filterUser > 0) { $where[] = 'cs.opened_by = ?'; $params[] = $filterUser; }
-        if ($filterDate)      { $where[] = 'DATE(cs.opened_at) = ?'; $params[] = $filterDate; }
+        // Filtrar siempre por la sucursal actual (branch registrado en la sesión de caja)
+        $where[] = 'cs.branch = ?';
+        $params[] = $currentBranch;
+        if ($filterDateFrom) { $where[] = 'DATE(cs.opened_at) >= ?'; $params[] = $filterDateFrom; }
+        if ($filterDateTo)   { $where[] = 'DATE(cs.opened_at) <= ?'; $params[] = $filterDateTo; }
         $whereSQL = 'WHERE ' . implode(' AND ', $where);
+
+        // Total count for pagination
+        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM cash_sessions cs $whereSQL");
+        $stmtCount->execute($params);
+        $totalSessions = (int) $stmtCount->fetchColumn();
+        $totalPages    = max(1, (int) ceil($totalSessions / $perPage));
+        $page          = min($page, $totalPages);
+        $offset        = ($page - 1) * $perPage;
 
         $stmt = $pdo->prepare("
             SELECT
@@ -1000,6 +1040,7 @@ class CashController extends BaseController
             LEFT JOIN cash_closing_counts ccc ON ccc.session_id = cs.id
             $whereSQL
             ORDER BY cs.opened_at DESC
+            LIMIT $perPage OFFSET $offset
         ");
         $stmt->execute($params);
         $sessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1044,10 +1085,121 @@ class CashController extends BaseController
             'sessions'            => $sessions,
             'withdrawalsBySession' => $withdrawalsBySession,
             'users'               => $users,
-            'filterUser'          => $filterUser,
-            'filterDate'          => $filterDate,
+            'filterDateFrom'      => $filterDateFrom,
+            'filterDateTo'        => $filterDateTo,
+            'filterDate'          => $filterDateFrom,
+            'page'                => $page,
+            'perPage'             => $perPage,
+            'totalPages'          => $totalPages,
+            'totalSessions'       => $totalSessions,
             'openSession'         => $openSession,
             'currentCash'         => $currentCash,
         ]);
+    }
+
+    // ── reprintAuth: POST — verify admin/superadmin credentials ──────────────
+    public function reprintAuth()
+    {
+        global $pdo;
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
+            exit;
+        }
+
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (!$username || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Usuario y contraseña son requeridos.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT * FROM users
+             WHERE username = ? AND status = 'active' AND is_locked = 0
+             LIMIT 1"
+        );
+        $stmt->execute([$username]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            echo json_encode(['success' => false, 'message' => 'Credenciales incorrectas.']);
+            exit;
+        }
+
+        if (!in_array($user['role'], ['admin', 'superadmin'])) {
+            echo json_encode(['success' => false, 'message' => 'Solo admin o superadmin pueden acceder a las reimpresiones.']);
+            exit;
+        }
+
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // ── reprintSales: GET — list sales for reprint panel (AJAX) ──────────────
+    public function reprintSales()
+    {
+        global $pdo;
+        header('Content-Type: application/json');
+
+        $sessionId  = intval($_GET['session_id'] ?? 0);
+        $dateFrom   = trim($_GET['date_from']   ?? '');
+        $dateTo     = trim($_GET['date_to']     ?? '');
+        $searchUser = trim($_GET['search_user'] ?? '');
+
+        $where  = ["o.status = 'completado'"];
+        $params = [];
+
+        if ($sessionId > 0) {
+            // Ventas pertenecientes a una sesión concreta (por el usuario que abrió caja)
+            $stmtSess = $pdo->prepare("SELECT opened_by, opened_at FROM cash_sessions WHERE id = ? LIMIT 1");
+            $stmtSess->execute([$sessionId]);
+            $sess = $stmtSess->fetch(PDO::FETCH_ASSOC);
+
+            if ($sess) {
+                $where[]  = 'o.user_id = ?';
+                $params[] = $sess['opened_by'];
+                $where[]  = 'o.created_at >= ?';
+                $params[] = $sess['opened_at'];
+            }
+        } else {
+            // Filtro por rango de fechas
+            if ($dateFrom) {
+                $where[]  = 'DATE(o.created_at) >= ?';
+                $params[] = $dateFrom;
+            }
+            if ($dateTo) {
+                $where[]  = 'DATE(o.created_at) <= ?';
+                $params[] = $dateTo;
+            }
+            // Filtro por usuario/cajero (nombre o username)
+            if ($searchUser) {
+                $like     = "%$searchUser%";
+                $where[]  = "(u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(u.first_name,' ',u.last_name) LIKE ?)";
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
+        }
+
+        $whereSQL = 'WHERE ' . implode(' AND ', $where);
+
+        $stmt = $pdo->prepare(
+            "SELECT o.id, o.total, o.pay_method, o.client_name, o.created_at,
+                    CONCAT(u.first_name,' ',u.last_name) AS cashier_name
+             FROM orders o
+             JOIN users u ON u.id = o.user_id
+             $whereSQL
+             ORDER BY o.created_at DESC
+             LIMIT 200"
+        );
+        $stmt->execute($params);
+        $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode($sales);
+        exit;
     }
 }

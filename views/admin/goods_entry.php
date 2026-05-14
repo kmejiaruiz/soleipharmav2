@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $invoiceSaved = ($savedInvoiceSub !== null && $savedInvoiceTax !== null);
 $createdDate  = isset($order['created_at']) ? date('d/m/Y', strtotime($order['created_at'])) : date('d/m/Y');
 $todayDate    = date('d/m/Y');
@@ -58,7 +58,7 @@ $todayDate    = date('d/m/Y');
             </div>
         </div>
 
-        <form id="goodsEntryForm" action="/soleipharmav2/order/storeGoodsEntry?id=<?= $order['id'] ?>" method="post">
+        <form id="goodsEntryForm" action="<?= APP_BASE ?>/order/storeGoodsEntry?id=<?= $order['id'] ?>" method="post">
             
             <!-- Botonera de acciones superiores -->
             <div class="d-flex justify-content-end mb-3">
@@ -445,7 +445,7 @@ $(document).ready(function() {
             return Swal.fire('Atención', 'Debe ingresar montos lógicos de la Factura.', 'warning');
         }
         
-        $.post('/soleipharmav2/order/saveInvoice?id=' + ORDER_ID, {
+        $.post('<?= APP_BASE ?>/order/saveInvoice?id=' + ORDER_ID, {
             invoice_subtotal: sub,
             invoice_tax: tax
         }, function(resp) {
@@ -555,9 +555,9 @@ $(document).ready(function() {
                             });
                             
                             if (json.has_debit_note || json.has_qty_debit_note) {
-                                window.open('/soleipharmav2/order/debitNote?id=' + json.entry_id, '_blank');
+                                window.open('<?= APP_BASE ?>/order/debitNote?id=' + json.entry_id, '_blank');
                             }
-                            window.location = '/soleipharmav2/order/entrySummary?id=' + (json.order_id || ORDER_ID);
+                            window.location = '<?= APP_BASE ?>/order/entrySummary?id=' + (json.order_id || ORDER_ID);
                             
                         } else {
                             setEstado('CALCULADO', 'badge-info');

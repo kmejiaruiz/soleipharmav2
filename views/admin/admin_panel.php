@@ -32,7 +32,7 @@
                     <div class="icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <a href="/soleipharmav2/admin/salesReport" class="small-box-footer">
+                    <a href="<?= APP_BASE ?>/admin/salesReport" class="small-box-footer">
                         Más info <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -57,7 +57,7 @@
                     <div class="icon">
                         <i class="fas fa-thumbs-up"></i>
                     </div>
-                    <a href="/soleipharmav2/admin/topProducts" class="small-box-footer">
+                    <a href="<?= APP_BASE ?>/admin/topProducts" class="small-box-footer">
                         Ver Top 10 <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -73,7 +73,7 @@
                     <div class="icon">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <a href="/soleipharmav2/admin/lowStock" class="small-box-footer">
+                    <a href="<?= APP_BASE ?>/admin/lowStock" class="small-box-footer">
                         Más info <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -178,7 +178,7 @@
                                 <small class="text-muted"><?= $criticalCount ?> producto(s) con stock bajo o agotado requieren atención inmediata.</small>
                             </div>
                         </div>
-                        <a href="/soleipharmav2/admin/lowStock" class="btn btn-sm btn-danger" style="border-radius:8px;font-size:0.8rem;">
+                        <a href="<?= APP_BASE ?>/admin/lowStock" class="btn btn-sm btn-danger" style="border-radius:8px;font-size:0.8rem;">
                             <i class="fas fa-list mr-1"></i>Ver todos
                         </a>
                     </div>
@@ -216,7 +216,7 @@
                                             </span>
                                         </td>
                                         <td style="padding:12px 20px;text-align:right;">
-                                            <a href="/soleipharmav2/order/create" class="btn btn-sm btn-outline-danger" style="border-radius:8px;font-size:0.78rem;padding:4px 12px;">
+                                            <a href="<?= APP_BASE ?>/order/create" class="btn btn-sm btn-outline-danger" style="border-radius:8px;font-size:0.78rem;padding:4px 12px;">
                                                 <i class="fas fa-cart-plus mr-1"></i>Pedir
                                             </a>
                                         </td>
@@ -236,9 +236,9 @@
             <div class="card-header">
                 <h3 class="card-title">Productos</h3>
                 <div class="card-tools">
-                    <a href="/soleipharmav2/admin/addProduct" class="btn btn-success btn-sm">Agregar
+                    <a href="<?= APP_BASE ?>/admin/addProduct" class="btn btn-success btn-sm">Agregar
                         Producto</a>
-                    <a href="/soleipharmav2/product/updateCostsForm" class="btn btn-warning btn-sm">Actualizar Costos</a>
+                    <a href="<?= APP_BASE ?>/product/updateCostsForm" class="btn btn-warning btn-sm">Actualizar Costos</a>
                 </div>
             </div>
             <div class="card-body table-responsive p-0">
@@ -264,8 +264,9 @@
                                 <td><?= (int) $p['stock'] ?></td>
                                 <td><?= $p['available'] ? 'Sí' : 'No' ?></td>
                                 <td>
-                                    <a href="/soleipharmav2/admin/editProduct?id=<?= $p['id'] ?>"
-                                        class="btn btn-sm btn-primary">Editar</a>
+                                    <a href="<?= APP_BASE ?>/admin/editProduct?id=<?= $p['id'] ?>"
+                                        class="btn btn-sm btn-primary"
+                                        data-ux-tooltip="Editar producto">Editar</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -302,7 +303,7 @@
                 </main>
                 <footer class="modal-footer">
                     <button type="button" class="btn btn-secondary modal__btn" data-micromodal-close>Cerrar</button>
-                    <a href="/soleipharmav2/admin/lockedUsers" class="btn btn-primary modal__btn modal__btn-primary">
+                    <a href="<?= APP_BASE ?>/admin/lockedUsers" class="btn btn-primary modal__btn modal__btn-primary">
                         Gestionar usuarios bloqueados
                     </a>
                 </footer>
@@ -311,7 +312,49 @@
     </div>
 <?php endif; ?>
 
-    <!-- Micromodal para Notificaciones (Superadmin y Admin) -->
+<?php if (!empty($pendingTransfers)): ?>
+    <!-- Modal de Traslados Pendientes -->
+    <div id="dashboardPendingTransfersModal" class="modal micromodal-slide" aria-hidden="true">
+        <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+            <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="dashboardPendingTransfersModal-title" style="max-width:540px;">
+                <header class="modal__header">
+                    <h2 class="modal__title" id="dashboardPendingTransfersModal-title" style="color:#856404;">
+                        <i class="fas fa-random"></i> ¡Traslados Pendientes de Recepción!
+                    </h2>
+                    <button class="modal__close" aria-label="Cerrar" data-micromodal-close></button>
+                </header>
+                <main class="modal__content">
+                    <p class="mb-3">Los siguientes traslados han llegado a <strong><?= htmlspecialchars(BRANCH) ?></strong> y están esperando ser recibidos:</p>
+                    <ul class="list-group mb-3">
+                        <?php foreach ($pendingTransfers as $pt): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-start" style="border-left:4px solid #ffc107;">
+                            <div>
+                                <strong>Traslado #<?= str_pad($pt['id'], 5, '0', STR_PAD_LEFT) ?></strong><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-building mr-1"></i>Desde: <?= htmlspecialchars($pt['from_branch']) ?><br>
+                                    <i class="fas fa-boxes mr-1"></i><?= (int)$pt['item_count'] ?> producto(s) &mdash; <?= (int)$pt['total_units'] ?> uds. totales<br>
+                                    <i class="fas fa-user mr-1"></i>Enviado por: <?= htmlspecialchars(trim($pt['creator_name'])) ?><br>
+                                    <i class="fas fa-clock mr-1"></i><?= date('d/m/Y H:i', strtotime($pt['created_at'])) ?>
+                                </small>
+                            </div>
+                            <a href="<?= APP_BASE ?>/branchTransfer/receive/<?= $pt['id'] ?>" class="btn btn-sm btn-warning ml-3 align-self-center" style="white-space:nowrap;">
+                                <i class="fas fa-check-double mr-1"></i>Recibir
+                            </a>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </main>
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal__btn" data-micromodal-close>Cerrar</button>
+                    <a href="<?= APP_BASE ?>/branchTransfer/index" class="btn btn-warning modal__btn">
+                        <i class="fas fa-list mr-1"></i>Ver todos los traslados
+                    </a>
+                </footer>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
     <?php if (isset($unreadNotificationsDashboard) && count($unreadNotificationsDashboard) > 0): ?>
     <div class="modal micromodal-slide" id="dashboardNotificationsModal" aria-hidden="true">
         <div class="modal__overlay" tabindex="-1" data-micromodal-close>
@@ -332,7 +375,7 @@
                             </li>
                         <?php endforeach; ?>
                     </ul>
-                    <form id="markNotificationsForm" method="POST" action="/soleipharmav2/admin/markNotificationsRead">
+                    <form id="markNotificationsForm" method="POST" action="<?= APP_BASE ?>/admin/markNotificationsRead">
                         <?php foreach ($unreadNotificationsDashboard as $notif): ?>
                             <input type="hidden" name="notification_ids[]" value="<?= $notif['id'] ?>">
                         <?php endforeach; ?>
@@ -347,7 +390,7 @@
             </div>
         </div>
     </div>
-    <?php $redirectUrl = ($_SESSION['user']['role'] === 'superadmin') ? '/soleipharmav2/discard/listPending' : '/soleipharmav2/discard/myHistory'; ?>
+    <?php $redirectUrl = ($_SESSION['user']['role'] === 'superadmin') ? '<?= APP_BASE ?>/discard/listPending' : '<?= APP_BASE ?>/discard/myHistory'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var btn = document.getElementById('btnGoToDiscards');
@@ -407,26 +450,34 @@
                 }
             }
             // Auto open the modal(s)
-            var hasLockedUsers = <?= (isset($lockedUsersAlerts_ParaSuperadmin) && count($lockedUsersAlerts_ParaSuperadmin) > 0) ? 'true' : 'false' ?>;
-            var hasUnreadNotifs = <?= (isset($unreadNotificationsDashboard) && count($unreadNotificationsDashboard) > 0) ? 'true' : 'false' ?>;
+            var hasLockedUsers     = <?= (isset($lockedUsersAlerts_ParaSuperadmin) && count($lockedUsersAlerts_ParaSuperadmin) > 0) ? 'true' : 'false' ?>;
+            var hasUnreadNotifs    = <?= (isset($unreadNotificationsDashboard) && count($unreadNotificationsDashboard) > 0) ? 'true' : 'false' ?>;
+            var hasPendingTransfers = <?= (!empty($pendingTransfers)) ? 'true' : 'false' ?>;
             
-            if (hasLockedUsers || hasUnreadNotifs) {
+            if (hasLockedUsers || hasUnreadNotifs || hasPendingTransfers) {
                 setTimeout(function() {
-                    if(hasLockedUsers) {
+                    function showTransfersModal() {
+                        if (hasPendingTransfers) {
+                            try { MicroModal.show('dashboardPendingTransfersModal'); } catch(e) { console.error(e); }
+                        }
+                    }
+                    function showNotifsModal() {
+                        if (hasUnreadNotifs) {
+                            try {
+                                MicroModal.show('dashboardNotificationsModal', {
+                                    onClose: function() { setTimeout(showTransfersModal, 400); }
+                                });
+                            } catch(e) { console.error(e); }
+                        } else { showTransfersModal(); }
+                    }
+                    if (hasLockedUsers) {
                         try {
                             MicroModal.show('dashboardLockedUserModal', {
-                                onClose: function() {
-                                    // Al cerrar usuarios bloqueados, muestra notificaciones si hay
-                                    if(hasUnreadNotifs) {
-                                        setTimeout(function() { MicroModal.show('dashboardNotificationsModal'); }, 500);
-                                    }
-                                }
+                                onClose: function() { setTimeout(showNotifsModal, 400); }
                             });
-                        } catch (e) { console.error("Error opening locked users modal", e); }
-                    } else if (hasUnreadNotifs) {
-                        try {
-                            MicroModal.show('dashboardNotificationsModal');
-                        } catch (e) { console.error("Error opening notifications modal", e); }
+                        } catch(e) { console.error(e); }
+                    } else {
+                        showNotifsModal();
                     }
                 }, 500);
             }
@@ -535,7 +586,7 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Mark as acknowledged via AJAX
-                        fetch('/soleipharmav2/admin/acknowledgeRoleUpgrade', { method: 'POST' })
+                        fetch('<?= APP_BASE ?>/admin/acknowledgeRoleUpgrade', { method: 'POST' })
                         .then(() => {
                             // Start Driver.js tour
                             const driver = window.driver.js.driver;

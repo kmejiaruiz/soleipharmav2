@@ -1,5 +1,5 @@
-<h1>Panel de Administración</h1>
-<a href="/soleipharmav2/admin/create" class="btn btn-success mb-3">Agregar Producto</a>
+﻿<h1>Panel de Administración</h1>
+<a href="<?= APP_BASE ?>/admin/create" class="btn btn-success mb-3">Agregar Producto</a>
 
 <table class="table">
   <thead>
@@ -19,8 +19,8 @@
       <td>$<?= $product['price'] ?></td>
       <td><?= $product['stock'] ?></td>
       <td>
-          <a href="/soleipharmav2/admin/edit?id=<?= $product['id'] ?>" class="btn btn-primary btn-sm">Editar</a>
-          <a href="/soleipharmav2/admin/delete?id=<?= $product['id'] ?>" class="btn btn-danger btn-sm">Eliminar</a>
+          <a href="<?= APP_BASE ?>/admin/edit?id=<?= $product['id'] ?>" class="btn btn-primary btn-sm">Editar</a>
+          <a href="<?= APP_BASE ?>/admin/delete?id=<?= $product['id'] ?>" class="btn btn-danger btn-sm">Eliminar</a>
       </td>
     </tr>
     <?php endforeach; ?>

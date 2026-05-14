@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // views/admin/my_profile.php
 $user = $_SESSION['user'] ?? [];
 $role = $user['role'] ?? '';
@@ -143,7 +143,7 @@ $roleColor = ['superadmin' => '#6f42c1', 'admin' => '#007bff', 'user' => '#28a74
         const csrf = document.querySelector('meta[name="csrf-token"]');
         if (csrf) fd.append('csrf_token', csrf.getAttribute('content'));
 
-        fetch('/soleipharmav2/admin/changeMyPassword', { method: 'POST', body: fd })
+        fetch('<?= APP_BASE ?>/admin/changeMyPassword', { method: 'POST', body: fd })
         .then(r => r.json()).then(data => {
             showResult(data.success ? 'success' : 'error', data.message);
             if (data.success) { document.getElementById('changePasswordForm').reset(); document.getElementById('strengthFill').style.width='0'; document.getElementById('strengthLabel').textContent=''; }

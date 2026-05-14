@@ -10,11 +10,35 @@ if (empty($_SESSION['csrf_token'])) {
 <html lang="es">
 
 <head>
+    <!-- Anti-FOUC: aplica el tema ANTES de renderizar cualquier estilo -->
+    <script>!function(){var t=localStorage.getItem('solei_theme');if(t)document.documentElement.setAttribute('data-theme',t);}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?>">
 
     <meta charset="UTF-8">
     <title>Panel Administrativo - Mi Tienda Online</title>
+    <!-- NProgress -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
+    <script>
+        NProgress.configure({ showSpinner: false, trickleSpeed: 80, minimum: 0.08 });
+    </script>
+    <style>
+        /* NProgress — por encima de todo, incluida la navbar de AdminLTE */
+        #nprogress               { pointer-events: none; }
+        #nprogress .bar          {
+            background: #6f42c1 !important;
+            position: fixed !important;
+            z-index: 999999 !important;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+        #nprogress .peg {
+            box-shadow: 0 0 10px #6f42c1, 0 0 5px #6f42c1 !important;
+            right: 0; width: 100px; height: 100%;
+            position: absolute; opacity: 1.0;
+        }
+    </style>
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
     <!-- Font Awesome Icons -->
@@ -27,8 +51,11 @@ if (empty($_SESSION['csrf_token'])) {
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <!-- Estilos personalizados (opcional) -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="./assets/css/loader.css">
+    <?php $css_v = filemtime(__DIR__ . '/../../assets/css/style.css'); ?>
+    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css?v=<?= $css_v ?>">
+    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/loader.css">
+    <!-- UX: APP_BASE disponible para JS -->
+    <script>window.SOLEI_APP_BASE = '<?= APP_BASE ?>';</script>
 
     <!-- Micromodal CSS base -->
     <style>
@@ -149,39 +176,13 @@ if (empty($_SESSION['csrf_token'])) {
 </head>
 
 <body class="hold-transition sidebar-mini">
+    <!-- NProgress: iniciar aquí, después de que body existe -->
+    <script>NProgress.start();</script>
 
-    <!-- Loader Overlay (al inicio de <body>) -->
-    <div id="loading-wrapper" style="
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.4);
-        z-index: 9999;
-        opacity: 1; visibility: visible;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-    ">
-        <!-- Top Progress Bar -->
-        <div class="top-loader-bar"></div>
-    </div>
-    <style>
-        .top-loader-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 4px;
-            background-color: #495057; /* Sleek medium-dark gray */
-            box-shadow: 0 0 8px rgba(73, 80, 87, 0.4);
-            animation: loadProgress 1.5s ease-out infinite;
-            transform-origin: left;
-        }
+    <!-- Skip to main content (accesibilidad) -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
 
-        @keyframes loadProgress {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; opacity: 0; }
-        }
-    </style>
+
 
     <div class="wrapper">
         <!-- Navbar -->
@@ -194,6 +195,43 @@ if (empty($_SESSION['csrf_token'])) {
                     <a href="index.php" class="nav-link">Inicio</a>
                 </li>
             </ul>
+
+            <!-- ── BÚSQUEDA GLOBAL — Trigger Button (Ctrl+K) ───────── -->
+            <button
+                id="globalSearchTrigger"
+                type="button"
+                class="d-none d-md-flex align-items-center"
+                onclick="window.GlobalSearch && window.GlobalSearch.open()"
+                aria-label="Abrir búsqueda global (Ctrl+K)"
+                style="
+                    gap: 8px;
+                    background: #f8f9fa;
+                    border: 1.5px solid #dee2e6;
+                    border-radius: 20px;
+                    padding: 5px 14px 5px 12px;
+                    color: #6c757d;
+                    font-size: 0.82rem;
+                    cursor: pointer;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                    white-space: nowrap;
+                "
+                onmouseover="this.style.borderColor='#6f42c1'; this.style.boxShadow='0 0 0 3px rgba(111,66,193,0.10)'"
+                onmouseout="this.style.borderColor='#dee2e6'; this.style.boxShadow='none'"
+            >
+                <i class="fas fa-search" style="font-size:11px;"></i>
+                <span>Buscar módulo...</span>
+                <kbd style="
+                    background: #e9ecef;
+                    border-radius: 5px;
+                    padding: 1px 6px;
+                    font-size: 10px;
+                    color: #495057;
+                    font-family: monospace;
+                    margin-left: 4px;
+                ">Ctrl+K</kbd>
+            </button>
+            <!-- ── FIN BÚSQUEDA GLOBAL ─────────────────────────────── -->
+
             <ul class="navbar-nav ml-auto">
                 <!-- Profile Dropdown -->
                 <li class="nav-item dropdown">
@@ -210,14 +248,30 @@ if (empty($_SESSION['csrf_token'])) {
                             <small class="text-muted d-block" style="font-size:11px;">Sesión activa como</small>
                             <span class="font-weight-bold" style="font-size:13px;color:#343a40;"><?= strtoupper(htmlspecialchars($_SESSION['user']['role'] ?? '')) ?></span>
                         </div>
-                        <a class="dropdown-item" href="/soleipharmav2/admin/myProfile" style="padding:8px 16px;">
+                        <a class="dropdown-item" href="<?= APP_BASE ?>/admin/myProfile" style="padding:8px 16px;">
                             <i class="fas fa-user-circle mr-2" style="color:#6f42c1;width:16px;"></i> Mi Perfil
                         </a>
                         <a class="dropdown-item" href="#" onclick="manualLockSession()" style="padding:8px 16px;">
                             <i class="fas fa-lock mr-2" style="color:#ffc107;width:16px;"></i> Bloquear Sesión
                         </a>
+                        <!-- ── MODO OSCURO TOGGLE ─────────────────────── -->
+                        <div
+                            class="dropdown-item d-flex align-items-center justify-content-between"
+                            style="padding:8px 16px; cursor:pointer;"
+                            onclick="window.DarkMode && window.DarkMode.toggle(); return false;"
+                            id="darkModeToggleItem"
+                        >
+                            <span>
+                                <i class="fas fa-moon mr-2" id="darkModeNavIcon" style="color:#6f42c1;width:16px;"></i>
+                                <span id="darkModeNavLabel">Modo Oscuro</span>
+                            </span>
+                            <div class="dark-mode-switch" id="darkModeSwitch">
+                                <div class="dark-mode-switch-thumb"></div>
+                            </div>
+                        </div>
+                        <!-- ── FIN MODO OSCURO TOGGLE ─────────────────── -->
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-danger" href="/soleipharmav2/auth/logout" style="padding:8px 16px;">
+                        <a class="dropdown-item text-danger" href="<?= APP_BASE ?>/auth/logout" style="padding:8px 16px;">
                             <i class="fas fa-sign-out-alt mr-2" style="width:16px;"></i> Cerrar Sesión
                         </a>
                     </div>
@@ -243,19 +297,19 @@ if (empty($_SESSION['csrf_token'])) {
 
                         <?php if ($userRole !== 'cajero'): ?>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/admin/index" class="nav-link">
+                            <a href="<?= APP_BASE ?>/admin/index" class="nav-link">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>Dashboard</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/admin/salesReport" class="nav-link">
+                            <a href="<?= APP_BASE ?>/admin/salesReport" class="nav-link">
                                 <i class="nav-icon fas fa-chart-line"></i>
                                 <p>Reporte de Ventas</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/admin/inventory" class="nav-link">
+                            <a href="<?= APP_BASE ?>/admin/inventory" class="nav-link">
                                 <i class="nav-icon fas fa-warehouse"></i>
                                 <p>Inventario</p>
                             </a>
@@ -263,13 +317,13 @@ if (empty($_SESSION['csrf_token'])) {
 
                         <?php if ($userRole === 'admin'): ?>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/discard/create" class="nav-link">
+                            <a href="<?= APP_BASE ?>/discard/create" class="nav-link">
                                 <i class="nav-icon fas fa-trash-alt"></i>
                                 <p>Solicitar Descarte</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/discard/myHistory" class="nav-link">
+                            <a href="<?= APP_BASE ?>/discard/myHistory" class="nav-link">
                                 <i class="nav-icon fas fa-folder-open"></i>
                                 <p>Mis Descartes</p>
                             </a>
@@ -278,25 +332,25 @@ if (empty($_SESSION['csrf_token'])) {
 
                         <?php if ($userRole === 'superadmin'): ?>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/discard/listPending" class="nav-link">
+                            <a href="<?= APP_BASE ?>/discard/listPending" class="nav-link">
                                 <i class="nav-icon fas fa-hourglass-half"></i>
                                 <p>Solicitudes Pendientes</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/admin/lockedUsers" class="nav-link bg-danger text-white mt-1 mb-1" style="border-radius: .25rem;">
+                            <a href="<?= APP_BASE ?>/admin/lockedUsers" class="nav-link bg-danger text-white mt-1 mb-1" style="border-radius: .25rem;">
                                 <i class="nav-icon fas fa-user-lock"></i>
                                 <p>Usuarios Bloqueados</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/admin/manageRoles" class="nav-link bg-indigo text-white mt-1 mb-1" style="border-radius: .25rem;">
+                            <a href="<?= APP_BASE ?>/admin/manageRoles" class="nav-link bg-indigo text-white mt-1 mb-1" style="border-radius: .25rem;">
                                 <i class="nav-icon fas fa-user-shield"></i>
                                 <p>Gestión de Usuarios</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/discard/history" class="nav-link">
+                            <a href="<?= APP_BASE ?>/discard/history" class="nav-link">
                                 <i class="nav-icon fas fa-history"></i>
                                 <p>Historial de Descartes</p>
                             </a>
@@ -304,37 +358,94 @@ if (empty($_SESSION['csrf_token'])) {
                         <?php endif; ?>
 
                         <li class="nav-item">
-                            <a href="/soleipharmav2/order/index" class="nav-link">
+                            <a href="<?= APP_BASE ?>/order/index" class="nav-link">
                                 <i class="nav-icon fas fa-shopping-cart"></i>
                                 <p>Pedidos de Productos</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/supplier/index" class="nav-link">
+                            <a href="<?= APP_BASE ?>/supplier/index" class="nav-link">
                                 <i class="nav-icon fas fa-truck"></i>
                                 <p>Proveedores</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/carousel/index" class="nav-link">
+                            <a href="<?= APP_BASE ?>/carousel/index" class="nav-link">
                                 <i class="nav-icon fas fa-images"></i>
                                 <p>Gestionar Carousel</p>
                             </a>
                         </li>
                         <!-- Inventario -->
                         <li class="nav-item" style="margin-top: 8px;">
-                            <a href="/soleipharmav2/inventory/movements" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
+                            <a href="<?= APP_BASE ?>/inventory/movements" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
                                 <i class="nav-icon fas fa-exchange-alt"></i>
                                 <p>Movimientos de Inventario</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/inventory/report" class="nav-link">
+                            <a href="<?= APP_BASE ?>/inventory/report" class="nav-link">
                                 <i class="nav-icon fas fa-print"></i>
                                 <p>Reporte de Bodega</p>
                             </a>
                         </li>
-                        <?php endif; /* fin bloque no-cajero */ ?>
+
+                        <!-- Gestión de Bodegas -->
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>
+                                    Bodegas
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview" style="padding-left:8px;">
+                                <li class="nav-item">
+                                    <a href="<?= APP_BASE ?>/bodega/stock" class="nav-link">
+                                        <i class="far fa-dot-circle nav-icon"></i>
+                                        <p>Ver Stock por Bodega</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?= APP_BASE ?>/bodega/transfer" class="nav-link">
+                                        <i class="far fa-dot-circle nav-icon"></i>
+                                        <p>Registrar Traslado</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?= APP_BASE ?>/bodega/history" class="nav-link">
+                                        <i class="far fa-dot-circle nav-icon"></i>
+                                        <p>Historial de Traslados</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <!-- Traslados entre Sucursales -->
+                        <?php if (in_array($userRole, ['admin', 'superadmin'])): ?>
+                        <li class="nav-item">
+                            <a href="<?= APP_BASE ?>/branchTransfer/index" class="nav-link">
+                                <i class="nav-icon fas fa-random"></i>
+                                <p>
+                                    Traslados entre Sucursales
+                                    <?php
+                                        // Badge con traslados pendientes para esta sucursal
+                                        try {
+                                            global $pdo;
+                                            $branch = defined('BRANCH') ? BRANCH : '';
+                                            if ($branch && $pdo) {
+                                                $stBT = $pdo->prepare("SELECT COUNT(*) FROM branch_transfers WHERE to_branch = ? AND status = 'pendiente'");
+                                                $stBT->execute([$branch]);
+                                                $btCount = (int)$stBT->fetchColumn();
+                                                if ($btCount > 0) {
+                                                    echo "<span class=\"badge badge-warning float-right\" style=\"font-size:9px;\">{$btCount}</span>";
+                                                }
+                                            }
+                                        } catch (Exception $e) {}
+                                    ?>
+                                </p>
+                            </a>
+                        </li>
+                        <?php endif; ?>
+                        <?php endif; /* fin bloque no-cajero */?>
 
                         <!-- Caja — solo para cajero, admin, superadmin -->
                         <?php if (in_array($userRole, ['cajero', 'admin', 'superadmin'])):
@@ -347,7 +458,7 @@ if (empty($_SESSION['csrf_token'])) {
                             } catch (Exception $e) { $csOpen = false; }
                         ?>
                         <li class="nav-item" style="margin-top:8px;">
-                            <a href="/soleipharmav2/cash/index" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
+                            <a href="<?= APP_BASE ?>/cash/index" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
                                 <i class="nav-icon fas fa-cash-register" style="color:#28a745;"></i>
                                 <p>
                                     Caja
@@ -361,14 +472,14 @@ if (empty($_SESSION['csrf_token'])) {
                         </li>
                         <?php if (in_array($userRole, ['admin', 'superadmin'])): ?>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/cash/history" class="nav-link">
+                            <a href="<?= APP_BASE ?>/cash/history" class="nav-link">
                                 <i class="nav-icon fas fa-history" style="color:#6c9fd8;"></i>
                                 <p>Historial de Caja</p>
                             </a>
                         </li>
                         <?php endif; ?>
                         <li class="nav-item">
-                            <a href="/soleipharmav2/cash/pos" class="nav-link">
+                            <a href="<?= APP_BASE ?>/cash/pos" class="nav-link">
                                 <i class="nav-icon fas fa-receipt" style="color:#17a2b8;"></i>
                                 <p>Facturar (POS)</p>
                             </a>
@@ -378,7 +489,7 @@ if (empty($_SESSION['csrf_token'])) {
                         <!-- Mi Perfil — oculto para cajero -->
                         <?php if ($userRole !== 'cajero'): ?>
                         <li class="nav-item" style="margin-top: 8px;">
-                            <a href="/soleipharmav2/admin/myProfile" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
+                            <a href="<?= APP_BASE ?>/admin/myProfile" class="nav-link" style="border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
                                 <i class="nav-icon fas fa-user-circle" style="color:#a78bda;"></i>
                                 <p>Mi Perfil</p>
                             </a>

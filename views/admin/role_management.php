@@ -1,4 +1,4 @@
-<!-- views/admin/role_management.php -->
+﻿<!-- views/admin/role_management.php -->
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -7,8 +7,8 @@
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Gestión de Usuarios</li>
                 </ol>
             </div>
@@ -29,7 +29,7 @@
                                 <i class="fas fa-users-slash"></i> Ver Usuarios Deshabilitados (<?= count($disabledUsers) ?>)
                             </button>
                             <?php endif; ?>
-                            <a href="/soleipharmav2/admin/roleChangeHistory" class="btn btn-sm btn-info">
+                            <a href="<?= APP_BASE ?>/admin/roleChangeHistory" class="btn btn-sm btn-info">
                                 <i class="fas fa-history"></i> Ver Bitácora de Roles
                             </a>
                         </div>
@@ -334,7 +334,7 @@
         }
         errorHint.style.display = 'none';
 
-        fetch('/soleipharmav2/admin/changeRoleAction', {
+        fetch('<?= APP_BASE ?>/admin/changeRoleAction', {
             method: 'POST',
             body: formData
         })
@@ -396,7 +396,7 @@
         let errorHint = document.getElementById('euValidationError');
         errorHint.style.display = 'none';
 
-        fetch('/soleipharmav2/admin/editUserAction', {
+        fetch('<?= APP_BASE ?>/admin/editUserAction', {
             method: 'POST',
             body: formData
         })
@@ -461,7 +461,7 @@
 
                         window.ActionModal.hide();
 
-                        fetch('/soleipharmav2/admin/toggleUserStatusAction', {
+                        fetch('<?= APP_BASE ?>/admin/toggleUserStatusAction', {
                             method: 'POST',
                             body: formData
                         })
@@ -513,7 +513,7 @@
 
                         window.ActionModal.hide();
 
-                        fetch('/soleipharmav2/admin/deleteUserAction', {
+                        fetch('<?= APP_BASE ?>/admin/deleteUserAction', {
                             method: 'POST',
                             body: formData
                         })

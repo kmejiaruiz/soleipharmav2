@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Se espera que el controlador pase: $salesGrouped (arreglo agrupado por día), $startDate y $endDate.
 ?>
 <section class="content-header">
@@ -10,7 +10,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Reporte de Ventas</li>
                 </ol>
             </div>
@@ -20,7 +20,7 @@
 <section class="content">
     <div class="container-fluid">
         <!-- Formulario para seleccionar el rango de fechas -->
-        <form id="filterForm" class="form-inline mb-4" method="GET" action="/soleipharmav2/salesReport/index">
+        <form id="filterForm" class="form-inline mb-4" method="GET" action="<?= APP_BASE ?>/salesReport/index">
             
             
             <div class="form-group mr-2">
@@ -104,7 +104,7 @@
         if (validateDates()) {
             var startDate = $("#start_date").val();
             var endDate = $("#end_date").val();
-            window.location.href = "/soleipharmav2/salesReport/generatePDF?start_date=" + startDate + "&end_date=" + endDate;
+            window.location.href = "<?= APP_BASE ?>/salesReport/generatePDF?start_date=" + startDate + "&end_date=" + endDate;
         }
     });
 

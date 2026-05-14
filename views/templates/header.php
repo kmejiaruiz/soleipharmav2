@@ -82,7 +82,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/soleipharmav2/index.php" class="text-white text-2xl font-bold flex items-center">
+                    <a href="<?= APP_BASE ?>/index.php" class="text-white text-2xl font-bold flex items-center">
                         <!-- Imagen solo en móviles -->
                         <img src="http://soleipharma.ct.ws/images/logo.jpg" class="w-10 h-auto md:hidden" alt="Logo">
 
@@ -91,12 +91,12 @@ if (session_status() === PHP_SESSION_NONE) {
                     </a>
 
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <button onclick="location.href='/soleipharmav2/product/index'"
+                        <button onclick="location.href='<?= APP_BASE ?>/product/index'"
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Productos</button>
-                        <button onclick="location.href='/soleipharmav2/cart/view'"
+                        <button onclick="location.href='<?= APP_BASE ?>/cart/view'"
                             class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Carrito</button>
                         <?php if (isset($_SESSION['user']) && ($_SESSION['user']['role'] === 'admin' || $_SESSION['user']['role'] === 'superadmin')): ?>
-                            <button onclick="location.href='/soleipharmav2/admin/index'"
+                            <button onclick="location.href='<?= APP_BASE ?>/admin/index'"
                                 class="text-white hover:text-gray-100 inline-flex items-center px-1 pt-1">Panel
                                 Admin</button>
                         <?php endif; ?>
@@ -110,7 +110,7 @@ if (session_status() === PHP_SESSION_NONE) {
                             $_SESSION['user']['last_name'] . ' ' .
                             $_SESSION['user']['second_surname']
                         ) ?></span>
-                        <a href="/soleipharmav2/auth/logout"
+                        <a href="<?= APP_BASE ?>/auth/logout"
                             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Cerrar sesión</a>
                     <?php else: ?>
                         <button @click="openLogin = true"
@@ -130,7 +130,7 @@ if (session_status() === PHP_SESSION_NONE) {
             <div><?= $_SESSION['flash']; ?></div>
             <?php if (isset($_SESSION['flash_type']) && $_SESSION['flash_type'] === 'cart'): ?>
                 <div class="flex space-x-2">
-                    <a href="/soleipharmav2/cart/view"
+                    <a href="<?= APP_BASE ?>/cart/view"
                         class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded">Ver Carrito</a>
                     <button @click="show = false" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Continuar</button>
                 </div>

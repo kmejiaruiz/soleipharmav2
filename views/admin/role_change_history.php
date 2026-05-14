@@ -1,4 +1,4 @@
-<!-- views/admin/role_change_history.php -->
+﻿<!-- views/admin/role_change_history.php -->
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -8,7 +8,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/manageRoles">Gestión de Privilegios</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/manageRoles">Gestión de Privilegios</a></li>
                     <li class="breadcrumb-item active">Bitácora</li>
                 </ol>
             </div>
@@ -24,7 +24,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Historial de Modificaciones de Acceso</h3>
                         <div class="card-tools">
-                            <a href="/soleipharmav2/admin/manageRoles" class="btn btn-sm btn-secondary">
+                            <a href="<?= APP_BASE ?>/admin/manageRoles" class="btn btn-sm btn-secondary">
                                 <i class="fas fa-arrow-left"></i> Volver a Usuarios
                             </a>
                         </div>

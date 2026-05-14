@@ -1,4 +1,4 @@
-<?php // views/admin/cash_withdrawal.php ?>
+﻿<?php // views/admin/cash_withdrawal.php ?>
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -7,7 +7,7 @@
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/cash/dashboard">Caja</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/cash/dashboard">Caja</a></li>
                     <li class="breadcrumb-item active">Retiro</li>
                 </ol>
             </div>
@@ -57,7 +57,7 @@
 
             <div class="row">
                 <div class="col-6">
-                    <a href="/soleipharmav2/cash/dashboard" class="btn btn-secondary btn-block">
+                    <a href="<?= APP_BASE ?>/cash/dashboard" class="btn btn-secondary btn-block">
                         <i class="fas fa-arrow-left"></i> Cancelar
                     </a>
                 </div>
@@ -110,13 +110,13 @@ document.getElementById('withdrawalForm').addEventListener('submit', async funct
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
     const fd = new FormData(this);
-    const res = await fetch('/soleipharmav2/cash/storeWithdrawal', { method: 'POST', body: fd });
+    const res = await fetch('<?= APP_BASE ?>/cash/storeWithdrawal', { method: 'POST', body: fd });
     const data = await res.json();
 
     if (data.success) {
         // Open PDF in new tab then redirect to dashboard
-        window.open('/soleipharmav2/cash/withdrawalPdf/' + data.withdrawal_id, '_blank');
-        setTimeout(() => window.location.href = '/soleipharmav2/cash/dashboard', 800);
+        window.open('<?= APP_BASE ?>/cash/withdrawalPdf/' + data.withdrawal_id, '_blank');
+        setTimeout(() => window.location.href = '<?= APP_BASE ?>/cash/dashboard', 800);
     } else {
         Swal.fire({ icon: 'error', title: 'Error', text: data.message });
         btn.disabled = false; btn.innerHTML = '<i class="fas fa-print"></i> Registrar y Generar Comprobante';

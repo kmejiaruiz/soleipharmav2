@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // controllers/SupplierController.php
 
 require_once 'AdminController.php';
@@ -21,7 +21,7 @@ class SupplierController extends AdminController
                 exit;
             }
             $_SESSION['flash'] = 'Acceso denegado. Solo el superadministrador puede editar proveedores.';
-            header('Location: /soleipharmav2/supplier/index');
+            header('Location: ' . APP_BASE . '/supplier/index');
             exit;
         }
     }
@@ -91,12 +91,12 @@ class SupplierController extends AdminController
         $this->requireSuperAdmin();
         global $pdo;
         $id = $_GET['id'] ?? null;
-        if (!$id) { header('Location: /soleipharmav2/supplier/index'); exit; }
+        if (!$id) { header('Location: ' . APP_BASE . '/supplier/index'); exit; }
 
         $stmt = $pdo->prepare("SELECT * FROM suppliers WHERE id = ?");
         $stmt->execute([$id]);
         $supplier = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$supplier) { header('Location: /soleipharmav2/supplier/index'); exit; }
+        if (!$supplier) { header('Location: ' . APP_BASE . '/supplier/index'); exit; }
 
         $this->renderAdmin('admin/supplier_form', ['supplier' => $supplier]);
     }
@@ -153,12 +153,12 @@ class SupplierController extends AdminController
     {
         global $pdo;
         $id = $_GET['id'] ?? null;
-        if (!$id) { header('Location: /soleipharmav2/supplier/index'); exit; }
+        if (!$id) { header('Location: ' . APP_BASE . '/supplier/index'); exit; }
 
         $stmt = $pdo->prepare("SELECT * FROM suppliers WHERE id = ?");
         $stmt->execute([$id]);
         $supplier = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$supplier) { header('Location: /soleipharmav2/supplier/index'); exit; }
+        if (!$supplier) { header('Location: ' . APP_BASE . '/supplier/index'); exit; }
 
         // Productos YA en catálogo
         $catalogItems = $pdo->prepare(

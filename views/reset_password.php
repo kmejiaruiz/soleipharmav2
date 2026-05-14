@@ -1,4 +1,4 @@
-<!-- views/reset_password.php -->
+﻿<!-- views/reset_password.php -->
 <!-- Este archivo se renderiza con header/footer (BaseController::render) -->
 <!-- Se muestra al usuario cuando navega al enlace de recuperación          -->
 
@@ -32,7 +32,7 @@ $safeError    = htmlspecialchars($tokenError   ?? '', ENT_QUOTES);
                 fd.append('new_password',     this.newPassword);
                 fd.append('confirm_password', this.confirmPassword);
                 try {
-                    const r    = await fetch('/soleipharmav2/auth/resetPassword', { method:'POST', body: fd });
+                    const r    = await fetch('<?= APP_BASE ?>/auth/resetPassword', { method:'POST', body: fd });
                     const data = await r.json();
                     if (data.success) {
                         this.successMsg      = data.message;

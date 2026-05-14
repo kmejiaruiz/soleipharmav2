@@ -1,4 +1,4 @@
-<?php if(session_status() === PHP_SESSION_NONE) session_start(); ?>
+﻿<?php if(session_status() === PHP_SESSION_NONE) session_start(); ?>
 <!— Incluir jQuery —>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <div class="row mb-2">
@@ -8,13 +8,13 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Solicitar Descarte</li>
                 </ol>
             </div>
         </div>
 
-<form id="formDiscard" method="POST" action="/soleipharmav2/discard/request">
+<form id="formDiscard" method="POST" action="<?= APP_BASE ?>/discard/request">
   <div class="form-group">
     <label for="product_id">Producto:</label>
     <select name="product_id" id="product_id" class="form-control" required>

@@ -1,4 +1,4 @@
-<?php // views/admin/cash_pos.php ?>
+﻿<?php // views/admin/cash_pos.php ?>
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2 align-items-center">
@@ -6,7 +6,10 @@
                 <h1><i class="fas fa-cash-register text-success"></i> Punto de Venta (POS)</h1>
             </div>
             <div class="col-sm-6 text-right">
-                <a href="/soleipharmav2/cash/dashboard" class="btn btn-sm btn-secondary">
+                <button class="btn btn-sm btn-secondary" id="btnReprintPOS" title="Reimpresiones">
+                    <i class="fas fa-print"></i> Reimpresiones
+                </button>
+                <a href="<?= APP_BASE ?>/cash/dashboard" class="btn btn-sm btn-secondary ml-2">
                     <i class="fas fa-arrow-left"></i> Volver al Panel
                 </a>
             </div>
@@ -440,7 +443,7 @@ document.getElementById('btnProcessSale').addEventListener('click', async functi
         fd.append('items[]', JSON.stringify({ id, qty: cart[id].qty, price: cart[id].price }));
     });
 
-    const res  = await fetch('/soleipharmav2/cash/posSale', { method: 'POST', body: fd });
+    const res  = await fetch('<?= APP_BASE ?>/cash/posSale', { method: 'POST', body: fd });
     const data = await res.json();
 
     this.disabled = false;
@@ -486,4 +489,278 @@ function escHtml(str) {
 
 // Focus search on load
 window.addEventListener('load', () => document.getElementById('posSearch').focus());
+</script>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL 1 (POS): Autenticación admin / reimpresiones     -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal micromodal-slide" id="modalReprintAuthPOS" aria-hidden="true">
+  <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+    <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modalReprintAuthPOSLabel" style="max-width:420px;">
+      <header class="modal__header" style="background:#343a40;color:#fff;border-radius:4px 4px 0 0;padding:16px 20px;margin:-30px -30px 20px;">
+        <h5 class="modal__title" id="modalReprintAuthPOSLabel" style="color:#fff;font-size:1rem;"><i class="fas fa-lock"></i> Acceso a Reimpresiones</h5>
+        <button class="modal__close" aria-label="Cerrar" data-micromodal-close style="color:#fff;"></button>
+      </header>
+      <main class="modal__content">
+        <p class="text-muted small mb-3">Ingrese credenciales de <strong>admin</strong> o <strong>superadmin</strong> para continuar.</p>
+        <div class="form-group mb-2">
+          <label class="small mb-1"><i class="fas fa-user"></i> Usuario</label>
+          <input type="text" id="rpAuthUserPOS" class="form-control form-control-sm" placeholder="Nombre de usuario" autocomplete="off">
+        </div>
+        <div class="form-group mb-1">
+          <label class="small mb-1"><i class="fas fa-lock"></i> Contraseña</label>
+          <input type="password" id="rpAuthPassPOS" class="form-control form-control-sm" placeholder="Contraseña">
+        </div>
+        <div id="rpAuthErrorPOS" class="text-danger small mt-2" style="display:none;"></div>
+      </main>
+      <footer class="modal__footer" style="justify-content:flex-end;gap:8px;">
+        <button type="button" class="modal__btn" data-micromodal-close aria-label="Cancelar">Cancelar</button>
+        <button type="button" class="modal__btn modal__btn-primary" id="btnReprintAuthConfirmPOS">
+          <i class="fas fa-sign-in-alt"></i> Ingresar
+        </button>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL 2 (POS): Panel de Reimpresiones                  -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal micromodal-slide" id="modalReprintPanelPOS" aria-hidden="true">
+  <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+    <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modalReprintPanelPOSLabel" style="max-width:900px;width:95%;padding:0;">
+      <header class="modal__header" style="background:#343a40;color:#fff;border-radius:4px 4px 0 0;padding:14px 20px;">
+        <h5 class="modal__title" id="modalReprintPanelPOSLabel" style="color:#fff;font-size:1rem;"><i class="fas fa-print"></i> Panel de Reimpresiones</h5>
+        <button class="modal__close" aria-label="Cerrar" data-micromodal-close style="color:#fff;"></button>
+      </header>
+      <main class="modal__content" style="padding:0;margin:0;">
+        <ul class="nav nav-tabs px-3 pt-2" id="reprintTabsPOS" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="tab-current-pos-tab" data-toggle="tab" href="#tab-current-pos" role="tab">
+              <i class="fas fa-user-clock"></i> Ventas de Esta Sesión
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="tab-history-pos-tab" data-toggle="tab" href="#tab-history-pos" role="tab">
+              <i class="fas fa-history"></i> Ventas Anteriores
+            </a>
+          </li>
+        </ul>
+        <div class="tab-content p-3">
+          <!-- TAB: current session -->
+          <div class="tab-pane fade show active" id="tab-current-pos" role="tabpanel">
+            <div id="rpCurrentLoadingPOS" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Cargando ventas...</div>
+            <div id="rpCurrentEmptyPOS" class="text-center py-4 text-muted" style="display:none;">
+              <i class="fas fa-receipt fa-2x mb-2"></i><br>No hay ventas en esta sesión.
+            </div>
+            <div id="rpCurrentTablePOS" style="display:none;">
+              <div class="mb-2">
+                <input type="text" id="rpCurrentSearchPOS" class="form-control form-control-sm" placeholder="🔍 Buscar por # recibo o cliente...">
+              </div>
+              <div style="max-height:400px;overflow-y:auto;">
+                <table class="table table-sm table-hover table-bordered mb-0">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th style="width:90px;"># Recibo</th><th>Fecha/Hora</th><th>Cliente</th><th>Cajero</th>
+                      <th class="text-right">Total</th><th>Método</th><th class="text-center" style="width:80px;">Reimprimir</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyCurrentSalesPOS"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- TAB: history -->
+          <div class="tab-pane fade" id="tab-history-pos" role="tabpanel">
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label class="small mb-1">Fecha desde</label>
+                <input type="date" id="rpHistDateFromPOS" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="small mb-1">Fecha hasta</label>
+                <input type="date" id="rpHistDateToPOS" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="small mb-1">Usuario / Cajero</label>
+                <input type="text" id="rpHistUserPOS" class="form-control form-control-sm" placeholder="Todos los usuarios">
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary btn-sm btn-block" id="btnRpHistSearchPOS">
+                  <i class="fas fa-search"></i> Buscar
+                </button>
+              </div>
+            </div>
+            <div id="rpHistLoadingPOS" class="text-center py-4" style="display:none;"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Buscando ventas...</div>
+            <div id="rpHistEmptyPOS" class="text-center py-4 text-muted" style="display:none;">
+              <i class="fas fa-search fa-2x mb-2"></i><br>No se encontraron ventas con esos filtros.
+            </div>
+            <div id="rpHistTablePOS" style="display:none;">
+              <div style="max-height:400px;overflow-y:auto;">
+                <table class="table table-sm table-hover table-bordered mb-0">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th style="width:90px;"># Recibo</th><th>Fecha/Hora</th><th>Cliente</th><th>Cajero</th>
+                      <th class="text-right">Total</th><th>Método</th><th class="text-center" style="width:80px;">Reimprimir</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyHistSalesPOS"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <footer class="modal__footer" style="justify-content:flex-end;padding:12px 20px;">
+        <button type="button" class="modal__btn" data-micromodal-close aria-label="Cerrar">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Reprint flow (POS page) ────────────────────────────────────────────────
+document.getElementById('btnReprintPOS').addEventListener('click', function() {
+    document.getElementById('rpAuthUserPOS').value = '';
+    document.getElementById('rpAuthPassPOS').value = '';
+    document.getElementById('rpAuthErrorPOS').style.display = 'none';
+    MicroModal.show('modalReprintAuthPOS');
+    setTimeout(() => document.getElementById('rpAuthUserPOS').focus(), 150);
+});
+
+document.getElementById('rpAuthPassPOS').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('btnReprintAuthConfirmPOS').click();
+});
+
+document.getElementById('btnReprintAuthConfirmPOS').addEventListener('click', async function() {
+    const username = document.getElementById('rpAuthUserPOS').value.trim();
+    const password = document.getElementById('rpAuthPassPOS').value.trim();
+    const errDiv   = document.getElementById('rpAuthErrorPOS');
+    errDiv.style.display = 'none';
+
+    if (!username || !password) {
+        errDiv.textContent = 'Usuario y contraseña son requeridos.';
+        errDiv.style.display = 'block';
+        return;
+    }
+
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+    const fd = new FormData();
+    fd.append('username', username);
+    fd.append('password', password);
+
+    try {
+        const res  = await fetch('<?= APP_BASE ?>/cash/reprintAuth', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success) {
+            MicroModal.close('modalReprintAuthPOS');
+            openReprintPanelPOS();
+        } else {
+            errDiv.textContent = data.message || 'Credenciales incorrectas.';
+            errDiv.style.display = 'block';
+        }
+    } catch(err) {
+        errDiv.textContent = 'Error de conexión.';
+        errDiv.style.display = 'block';
+    }
+
+    this.disabled = false;
+    this.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar';
+});
+
+const posSessionId = <?= (int)($session['id'] ?? 0) ?>;
+const POS_PAY_LABELS = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '🏦 Transfer.' };
+
+function openReprintPanelPOS() {
+    MicroModal.show('modalReprintPanelPOS');
+    loadCurrentSalesPOS();
+}
+
+async function loadCurrentSalesPOS() {
+    document.getElementById('rpCurrentLoadingPOS').style.display = 'block';
+    document.getElementById('rpCurrentEmptyPOS').style.display   = 'none';
+    document.getElementById('rpCurrentTablePOS').style.display   = 'none';
+
+    try {
+        const res  = await fetch(`/soleipharmav2/cash/reprintSales?session_id=${posSessionId}`);
+        const data = await res.json();
+        document.getElementById('rpCurrentLoadingPOS').style.display = 'none';
+        if (!data.length) { document.getElementById('rpCurrentEmptyPOS').style.display = 'block'; return; }
+        renderSalesTablePOS('tbodyCurrentSalesPOS', data);
+        document.getElementById('rpCurrentTablePOS').style.display = 'block';
+        document.getElementById('rpCurrentSearchPOS').addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('#tbodyCurrentSalesPOS tr').forEach(tr => {
+                tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    } catch(e) {
+        document.getElementById('rpCurrentLoadingPOS').style.display = 'none';
+        document.getElementById('rpCurrentEmptyPOS').style.display = 'block';
+    }
+}
+
+document.getElementById('btnRpHistSearchPOS').addEventListener('click', loadHistSalesPOS);
+
+async function loadHistSalesPOS() {
+    const dateFrom = document.getElementById('rpHistDateFromPOS').value;
+    const dateTo   = document.getElementById('rpHistDateToPOS').value;
+    const user     = document.getElementById('rpHistUserPOS').value.trim();
+
+    document.getElementById('rpHistLoadingPOS').style.display = 'block';
+    document.getElementById('rpHistEmptyPOS').style.display   = 'none';
+    document.getElementById('rpHistTablePOS').style.display   = 'none';
+
+    try {
+        let url = `/soleipharmav2/cash/reprintSales?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
+        if (user) url += `&search_user=${encodeURIComponent(user)}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        document.getElementById('rpHistLoadingPOS').style.display = 'none';
+        if (!data.length) { document.getElementById('rpHistEmptyPOS').style.display = 'block'; return; }
+        renderSalesTablePOS('tbodyHistSalesPOS', data);
+        document.getElementById('rpHistTablePOS').style.display = 'block';
+    } catch(e) {
+        document.getElementById('rpHistLoadingPOS').style.display = 'none';
+        document.getElementById('rpHistEmptyPOS').style.display = 'block';
+    }
+}
+
+function renderSalesTablePOS(tbodyId, sales) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+    sales.forEach(s => {
+        const tr = document.createElement('tr');
+        const numLabel = '#' + String(s.id).padStart(6, '0');
+        const method   = POS_PAY_LABELS[s.pay_method] || s.pay_method;
+        const total    = 'C$ ' + parseFloat(s.total).toFixed(2);
+        const dt       = s.created_at ? s.created_at.substring(0, 16).replace('T', ' ') : '—';
+        tr.innerHTML = `
+            <td><span class="badge badge-secondary">${numLabel}</span></td>
+            <td><small>${escHtml(dt)}</small></td>
+            <td><small>${escHtml(s.client_name || 'Consumidor Final')}</small></td>
+            <td><small>${escHtml(s.cashier_name || '—')}</small></td>
+            <td class="text-right font-weight-bold text-success"><small>${total}</small></td>
+            <td><small>${method}</small></td>
+            <td class="text-center">
+                <a href="<?= APP_BASE ?>/cash/posReceipt/${s.id}" target="_blank"
+                   class="btn btn-xs btn-outline-dark" title="Reimprimir recibo">
+                    <i class="fas fa-print"></i>
+                </a>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+document.getElementById('tab-history-pos-tab').addEventListener('shown.bs.tab', function() {
+    if (!this.dataset.loaded) { this.dataset.loaded = '1'; loadHistSalesPOS(); }
+});
+
+// Re-init Micromodal para nuevos modales en esta página
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof MicroModal !== 'undefined') MicroModal.init({ disableScroll: true });
+});
 </script>

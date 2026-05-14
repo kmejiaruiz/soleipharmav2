@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,7 @@
             <p class="text-gray-600 mb-8 text-base">
                 Tus privilegios han sido modificados por un Administrador o existe una inconsistencia de seguridad. Por protección, tu sesión actual se cerrará en este momento.
             </p>
-            <a href="/soleipharmav2/index.php?show_login=1" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-md px-4 py-3 bg-red-600 text-lg font-bold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors uppercase tracking-wider">
+            <a href="<?= APP_BASE ?>/index.php?show_login=1" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-md px-4 py-3 bg-red-600 text-lg font-bold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors uppercase tracking-wider">
                 Continuar
             </a>
         </div>

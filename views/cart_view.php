@@ -1,4 +1,4 @@
-<!-- views/cart_modal.php -->
+﻿<!-- views/cart_modal.php -->
 <div class="flex  justify-center ">
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
         <h2 class="text-3xl font-bold text-black mb-4 text-center">Tu Carrito</h2>
@@ -27,7 +27,7 @@
                         <td class="py-2 px-3">$<?= $item['price'] ?></td>
                         <td class="py-2 px-3">$<?= number_format($total, 2) ?></td>
                         <td class="py-2 px-3">
-                            <a href="/soleipharmav2/cart/remove?id=<?= $item['id'] ?>"
+                            <a href="<?= APP_BASE ?>/cart/remove?id=<?= $item['id'] ?>"
                                 class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
                                 Eliminar
                             </a>
@@ -39,7 +39,7 @@
             <div class="text-right">
                 <p class="text-xl font-semibold text-black">Total a pagar: $<?= number_format($grandTotal, 2) ?></p>
                 <div class="mt-4">
-                    <a href="/soleipharmav2/cart/checkout"
+                    <a href="<?= APP_BASE ?>/cart/checkout"
                         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                         Realizar Compra
                     </a>

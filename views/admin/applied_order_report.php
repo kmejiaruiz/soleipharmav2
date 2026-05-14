@@ -212,7 +212,8 @@
                 <h2 class="document-title">Boleta de Pedido</h2>
                 <div class="meta-info">
                     Nº de Pedido: <span class="highlight-text">#<?= str_pad($order['id'], 6, '0', STR_PAD_LEFT) ?></span><br>
-                    Fecha Creación: <?= htmlspecialchars($orderDate) ?>
+                    Fecha Creación: <?= htmlspecialchars($orderDate) ?><br>
+                    <span style="color:#dc3545;font-weight:bold;">Hora de Impresión: <?= date('d/m/Y H:i:s') ?></span>
                 </div>
             </td>
         </tr>
@@ -231,8 +232,8 @@
             </td>
             <td style="width: 48%; padding-left: 2%;">
                 <div class="info-box">
-                    <h4>Fecha de Aplicación (Aprobado)</h4>
-                    <p style="font-size: 15px; color: #495057; font-weight: normal; text-transform:none;"><?= htmlspecialchars($appliedDate) ?></p>
+                    <h4>Hora de Aplicación (Aprobado)</h4>
+                    <p style="font-size: 15px; color: #495057; font-weight: bold; text-transform:none;"><?= htmlspecialchars($appliedDate) ?></p>
                 </div>
             </td>
         </tr>

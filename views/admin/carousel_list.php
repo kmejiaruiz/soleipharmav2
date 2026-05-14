@@ -1,4 +1,4 @@
-<section class="content-header">
+﻿<section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
@@ -7,7 +7,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Gestión del Carousel</li>
                 </ol>
             </div>
@@ -16,7 +16,7 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-        <a href="/soleipharmav2/carousel/add" class="btn btn-success mb-3">Agregar Nuevo Slide</a>
+        <a href="<?= APP_BASE ?>/carousel/add" class="btn btn-success mb-3">Agregar Nuevo Slide</a>
         <?php if(!empty($slides)): ?>
         <table class="table table-bordered">
             <thead>
@@ -37,9 +37,9 @@
                     <td><?= htmlspecialchars($slide['title']) ?></td>
                     <td><?= htmlspecialchars($slide['description']) ?></td>
                     <td>
-                        <a href="/soleipharmav2/carousel/edit?id=<?= $slide['id'] ?>"
+                        <a href="<?= APP_BASE ?>/carousel/edit?id=<?= $slide['id'] ?>"
                             class="btn btn-primary btn-sm">Editar</a>
-                        <a href="/soleipharmav2/carousel/delete?id=<?= $slide['id'] ?>"
+                        <a href="<?= APP_BASE ?>/carousel/delete?id=<?= $slide['id'] ?>"
                             class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar slide?');">Eliminar</a>
                     </td>
                 </tr>

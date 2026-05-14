@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // views/admin/orders_edit.php
 // Variables: $order, $orderItems, $orderTotal
 $isPending = ($order['status'] === 'pending');
@@ -12,8 +12,8 @@ $statusLabel = ucfirst($order['status'] ?? '');
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active"> Pedido #<?= htmlspecialchars($order['id'] ?? '') ?></li>
                 </ol>
             </div>
@@ -73,7 +73,7 @@ $statusLabel = ucfirst($order['status'] ?? '');
             <div class="card-body table-responsive p-0">
                 <?php if ($isPending): ?>
                     <form id="editOrderForm"
-                        action="/soleipharmav2/order/update?id=<?= $order['id'] ?>" method="post">
+                        action="<?= APP_BASE ?>/order/update?id=<?= $order['id'] ?>" method="post">
                 <?php endif; ?>
 
                 <table class="table table-bordered table-hover">
@@ -128,14 +128,14 @@ $statusLabel = ucfirst($order['status'] ?? '');
                 <?php if ($isPending): ?>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary">Actualizar Pedido</button>
-                        <a href="/soleipharmav2/order/index" class="btn btn-secondary ml-2">Volver</a>
+                        <a href="<?= APP_BASE ?>/order/index" class="btn btn-secondary ml-2">Volver</a>
                     </div>
                     </form>
                 <?php else: ?>
                     <div class="card-footer">
-                        <a href="/soleipharmav2/order/index" class="btn btn-secondary">Volver a Pedidos</a>
+                        <a href="<?= APP_BASE ?>/order/index" class="btn btn-secondary">Volver a Pedidos</a>
                         <?php if ($order['status'] === 'received'): ?>
-                            <a href="/soleipharmav2/order/goodsEntryReport?id=<?= $order['id'] ?>"
+                            <a href="<?= APP_BASE ?>/order/goodsEntryReport?id=<?= $order['id'] ?>"
                                 class="btn btn-info ml-2">Ver Boleta de Recepción</a>
                         <?php endif; ?>
                     </div>
@@ -179,7 +179,7 @@ $statusLabel = ucfirst($order['status'] ?? '');
                 success: function (response) {
                     if (response.success) {
                         Swal.fire({ icon: 'success', title: 'Éxito', text: response.message })
-                            .then(() => { window.location.href = "/soleipharmav2/order/index"; });
+                            .then(() => { window.location.href = "<?= APP_BASE ?>/order/index"; });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: response.message });
                     }
@@ -193,7 +193,7 @@ $statusLabel = ucfirst($order['status'] ?? '');
         // Guardar proveedor
         $('#btnSaveSupplier').click(function() {
             const supplierId = $('#supplierSelectEdit').val();
-            $.post('/soleipharmav2/order/updateSupplier', {
+            $.post('<?= APP_BASE ?>/order/updateSupplier', {
                 order_id: <?= $order['id'] ?>,
                 supplier_id: supplierId
             }, function(r) {

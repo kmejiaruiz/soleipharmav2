@@ -1,4 +1,4 @@
-<?php // views/admin/supplier_catalog.php ?>
+﻿<?php // views/admin/supplier_catalog.php ?>
 <section class="content-header">
     <div class="row mb-2">
         <div class="col-sm-6">
@@ -6,8 +6,8 @@
         </div>
         <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-                <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="/soleipharmav2/supplier/index">Proveedores</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/supplier/index">Proveedores</a></li>
                 <li class="breadcrumb-item active">Catálogo</li>
             </ol>
         </div>
@@ -105,10 +105,10 @@
 
                 <div class="card mt-3">
                     <div class="card-body text-center">
-                        <a href="/soleipharmav2/supplier/edit?id=<?= $supplier['id'] ?>" class="btn btn-warning btn-sm mr-1">
+                        <a href="<?= APP_BASE ?>/supplier/edit?id=<?= $supplier['id'] ?>" class="btn btn-warning btn-sm mr-1">
                             <i class="fas fa-edit"></i> Editar Proveedor
                         </a>
-                        <a href="/soleipharmav2/supplier/index" class="btn btn-secondary btn-sm">
+                        <a href="<?= APP_BASE ?>/supplier/index" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left"></i> Volver
                         </a>
                     </div>
@@ -147,7 +147,7 @@ $(document).ready(function() {
 
         if (!productId) { return Swal.fire('Atención', 'Selecciona un producto.', 'warning'); }
 
-        $.post('/soleipharmav2/supplier/addProduct', {
+        $.post('<?= APP_BASE ?>/supplier/addProduct', {
             supplier_id: SUPPLIER_ID,
             product_id: productId,
             supplier_price: price
@@ -203,7 +203,7 @@ $(document).ready(function() {
             cancelButtonText: 'Cancelar'
         }).then(result => {
             if (!result.isConfirmed) return;
-            $.post('/soleipharmav2/supplier/removeProduct', {
+            $.post('<?= APP_BASE ?>/supplier/removeProduct', {
                 supplier_id: SUPPLIER_ID,
                 product_id: productId
             }, function(r) {
@@ -222,7 +222,7 @@ $(document).ready(function() {
     $(document).on('change', '.price-input', function() {
         const productId = $(this).data('product-id');
         const price     = $(this).val();
-        $.post('/soleipharmav2/supplier/addProduct', {
+        $.post('<?= APP_BASE ?>/supplier/addProduct', {
             supplier_id: SUPPLIER_ID,
             product_id: productId,
             supplier_price: price

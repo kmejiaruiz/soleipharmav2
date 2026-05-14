@@ -5,10 +5,10 @@ require_once 'BaseModel.php';
 class ProductOrder extends BaseModel
 {
     // Crea un pedido y retorna el id generado o false en caso de error.
-    public function createOrder($admin_id, $admin_name, $total = 0.00)
+    public function createOrder($admin_id, $admin_name, $branch, $total = 0.00)
     {
-        $stmt = $this->pdo->prepare("INSERT INTO product_orders (admin_id, admin_name, total) VALUES (?, ?, ?)");
-        if ($stmt->execute([$admin_id, $admin_name, $total])) {
+        $stmt = $this->pdo->prepare("INSERT INTO product_orders (admin_id, admin_name, branch, total) VALUES (?, ?, ?, ?)");
+        if ($stmt->execute([$admin_id, $admin_name, $branch, $total])) {
             return $this->pdo->lastInsertId();
         }
         return false;

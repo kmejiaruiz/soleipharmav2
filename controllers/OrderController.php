@@ -4,6 +4,7 @@
 require_once 'AdminController.php';
 require_once 'models/ProductOrder.php';
 require_once 'models/Product.php';
+require_once __DIR__ . '/../helpers/BranchStock.php';
 require_once 'config/config.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -67,7 +68,8 @@ class OrderController extends AdminController
         }
 
         $adminId = $_SESSION['user']['id'];
-        $orderId = $this->orderModel->createOrder($adminId, $_SESSION['user']['username'], $totalOrder);
+        $branch  = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+        $orderId = $this->orderModel->createOrder($adminId, $_SESSION['user']['username'], $branch, $totalOrder);
 
         // Guardar supplier_id en el pedido
         if ($supplierId) {
@@ -83,16 +85,20 @@ class OrderController extends AdminController
         exit;
     }
 
-    // Listar pedidos
+    // Listar pedidos — filtrado por sucursal actual
     public function index()
     {
         global $pdo;
-        $orders = $pdo
-            ->query("SELECT po.*, s.name AS supplier_name
-                     FROM product_orders po
-                     LEFT JOIN suppliers s ON s.id = po.supplier_id
-                     ORDER BY po.order_date DESC")
-            ->fetchAll(PDO::FETCH_ASSOC);
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+        $stmt = $pdo->prepare(
+            "SELECT po.*, s.name AS supplier_name
+             FROM product_orders po
+             LEFT JOIN suppliers s ON s.id  = po.supplier_id
+             WHERE po.branch = ?
+             ORDER BY po.order_date DESC"
+        );
+        $stmt->execute([$branch]);
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $this->renderAdmin('admin/orders_list', ['orders' => $orders]);
     }
 
@@ -120,18 +126,19 @@ class OrderController extends AdminController
     public function edit($id)
     {
         global $pdo;
-        // Load order with supplier name
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+        // Cargar pedido verificando que pertenezca a esta sucursal (por branch del pedido, no del usuario)
         $stmt = $pdo->prepare(
             "SELECT po.*, s.name AS supplier_name
              FROM product_orders po
-             LEFT JOIN suppliers s ON s.id = po.supplier_id
-             WHERE po.id = ?"
+             LEFT JOIN suppliers s ON s.id  = po.supplier_id
+             WHERE po.id = ? AND po.branch = ?"
         );
-        $stmt->execute([$id]);
+        $stmt->execute([$id, $branch]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$order) {
-            $_SESSION['flash'] = "Pedido no encontrado.";
-            header("Location: /soleipharmav2/order/index");
+            $_SESSION['flash'] = "Pedido no encontrado o no pertenece a esta sucursal.";
+            header("Location: " . APP_BASE . "/order/index");
             exit;
         }
 
@@ -233,24 +240,26 @@ class OrderController extends AdminController
     public function goodsEntry($orderId)
     {
         global $pdo;
-        // 1) Obtener el pedido con nombre de proveedor
+        $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
+
+        // 1) Obtener el pedido verificando que pertenezca a esta sucursal (por branch del pedido)
         $stmt = $pdo->prepare(
             "SELECT po.*, s.name AS supplier_name
              FROM product_orders po
-             LEFT JOIN suppliers s ON s.id = po.supplier_id
-             WHERE po.id = ?"
+             LEFT JOIN suppliers s ON s.id  = po.supplier_id
+             WHERE po.id = ? AND po.branch = ?"
         );
-        $stmt->execute([$orderId]);
+        $stmt->execute([$orderId, $branch]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$order) {
-            $_SESSION['flash'] = "Pedido no encontrado.";
-            header("Location: /soleipharmav2/order/index");
+            $_SESSION['flash'] = "Pedido no encontrado o no pertenece a esta sucursal.";
+            header("Location: " . APP_BASE . "/order/index");
             exit;
         }
         // 2) Verificar estado
         if ($order['status'] !== 'applied') {
             $_SESSION['flash'] = "Solo se puede dar entrada a pedidos aplicados.";
-            header("Location: /soleipharmav2/order/index");
+            header("Location: " . APP_BASE . "/order/index");
             exit;
         }
         // 3) Obtener los ítems: cantidad ordenada y costo unitario
@@ -396,16 +405,17 @@ class OrderController extends AdminController
         try {
             $pdo->beginTransaction();
 
-            // 6.1) Cabecera de entrada con montos de factura y de sistema
+            // 6.1) Cabecera de entrada con branch tomado del pedido
             $stmtE = $pdo->prepare("
             INSERT INTO goods_entries
-              (order_id, received_by, invoice_subtotal, invoice_tax,
+              (order_id, received_by, branch, invoice_subtotal, invoice_tax,
                system_subtotal, system_tax, system_total)
-            VALUES (?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?)
         ");
             $stmtE->execute([
                 $orderId,
                 $receiverId,
+                $order['branch'],   // branch fijo al momento de la entrada
                 $invoiceSub,
                 $invoiceTax,
                 $sysSub,
@@ -420,14 +430,15 @@ class OrderController extends AdminController
               (goods_entry_id, product_id, quantity_received, justification)
             VALUES (?,?,?,?)
         ");
-            $stmtS = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+            $branch = defined('BRANCH') && BRANCH !== '' ? BRANCH : ($_SESSION['user']['branch'] ?? '');
             foreach ($items as $it) {
-                $pid = $it['product_id'];
+                $pid  = $it['product_id'];
                 $rQty = max(0, intval($received[$pid] ?? 0));
                 $just = $justifs[$pid] ?? null;
 
                 $stmtD->execute([$entryId, $pid, $rQty, $just]);
-                $stmtS->execute([$rQty, $pid]);
+                // Sumar al stock de la sucursal que recibe
+                BranchStock::adjust($pdo, $pid, $branch, $rQty);
             }
 
             // 6.3) Marcar pedido como recibido
@@ -501,7 +512,7 @@ class OrderController extends AdminController
         $entry = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$entry) {
             $_SESSION['flash'] = 'No se encontró entrada de mercancía.';
-            header('Location: /soleipharmav2/order/index');
+            header('Location: ' . APP_BASE . '/order/index');
             exit;
         }
 

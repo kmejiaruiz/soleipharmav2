@@ -1,4 +1,4 @@
-<?php // views/admin/cash_open.php ?>
+﻿<?php // views/admin/cash_open.php ?>
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -7,7 +7,7 @@
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
                     <li class="breadcrumb-item active">Apertura de Caja</li>
                 </ol>
             </div>
@@ -67,7 +67,7 @@ document.getElementById('openCashForm').addEventListener('submit', async functio
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abriendo...';
 
     const fd = new FormData(this);
-    const res = await fetch('/soleipharmav2/cash/store', { method: 'POST', body: fd });
+    const res = await fetch('<?= APP_BASE ?>/cash/store', { method: 'POST', body: fd });
     const data = await res.json();
 
     if (data.success) {

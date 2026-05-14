@@ -1,4 +1,4 @@
-<!-- views/admin/invoice.php -->
+﻿<!-- views/admin/invoice.php -->
 <section class="content-header">
   <div class="container-fluid">
     <div class="row mb-2">
@@ -8,7 +8,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Generar Boleta / Factura</li>
                 </ol>
             </div>
@@ -23,7 +23,7 @@
         <h3 class="card-title">Datos de la Boleta</h3>
       </div>
       <!-- form start -->
-      <form method="post" action="/soleipharmav2/invoice/generate">
+      <form method="post" action="<?= APP_BASE ?>/invoice/generate">
         <div class="card-body">
           <div class="form-group">
             <label for="serie">Serie</label>

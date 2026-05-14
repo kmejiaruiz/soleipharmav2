@@ -1,4 +1,4 @@
-<main class="container mx-auto py-6">
+﻿<main class="container mx-auto py-6">
     <!-- Carousel con Splide -->
     <?php if (isset($slides) && is_array($slides) && count($slides) > 0): ?>
         <section class="mb-8">
@@ -50,7 +50,7 @@
                             Ver detalle
                         </a>
                     <?php else: ?>
-                        <a href="/soleipharmav2/product/detail?id=<?= $product['id'] ?>"
+                        <a href="<?= APP_BASE ?>/product/detail?id=<?= $product['id'] ?>"
                             class="mt-4 inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                             Ver detalle
                         </a>
@@ -65,7 +65,7 @@
         <ul class="inline-flex -space-x-px">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <li>
-                    <a href="/soleipharmav2/product/index?page=<?= $i ?>"
+                    <a href="<?= APP_BASE ?>/product/index?page=<?= $i ?>"
                         class="px-4 py-2 border <?= $i == $currentPage ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' ?> hover:bg-indigo-500 hover:text-white">
                         <?= $i ?>
                     </a>
@@ -80,7 +80,7 @@
         <ul class="flex space-x-2">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <li>
-                    <a href="/soleipharmav2/product/index?page=<?= $i ?>" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 
+                    <a href="<?= APP_BASE ?>/product/index?page=<?= $i ?>" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-200 
                <?= ($i == $currentPage) ? 'bg-blue-500 text-white border-blue-500' : '' ?>">
                         <?= $i ?>
                     </a>

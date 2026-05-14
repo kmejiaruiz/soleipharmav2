@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once 'AdminController.php';
 require_once 'models/DiscardRequest.php';
 require_once 'models/Notification.php';
@@ -193,13 +193,13 @@ class DiscardController extends AdminController
     public function edit()
     {
         if ($_SESSION['user']['role'] !== 'admin') {
-            header('Location: /soleipharmav2/discard/myHistory');
+            header('Location: ' . APP_BASE . '/discard/myHistory');
             exit;
         }
 
         $id = intval($_GET['id'] ?? 0);
         if (!$id) {
-            header('Location: /soleipharmav2/discard/myHistory');
+            header('Location: ' . APP_BASE . '/discard/myHistory');
             exit;
         }
 
@@ -215,7 +215,7 @@ class DiscardController extends AdminController
     $req = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$req || $req['status'] !== 'in_revision' || $req['requested_by'] != $_SESSION['user']['id']) {
-            header('Location: /soleipharmav2/discard/myHistory');
+            header('Location: ' . APP_BASE . '/discard/myHistory');
             exit;
         }
 

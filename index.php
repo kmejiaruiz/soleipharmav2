@@ -3,7 +3,40 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// ── Detección de primera ejecución ──────────────────────────────────────────
+// Si aún no existe config/app.json, mostrar el wizard de configuración inicial.
+if (!file_exists(__DIR__ . '/config/app.json')) {
+    require_once __DIR__ . '/controllers/SetupController.php';
+
+    // Resolver la acción desde query string o desde URL amigable
+    // Soporta: ?action=X  o  /setup/X
+    $setupAction = $_GET['action'] ?? '';
+    if ($setupAction === '') {
+        $uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $parts = explode('/', rtrim($uri, '/'));
+        // /soleipharmav2/setup/testConnection  → partes[3]
+        // /soleipharmav2/index.php             → sin acción
+        foreach ($parts as $i => $part) {
+            if (strtolower($part) === 'setup' && isset($parts[$i + 1])) {
+                $setupAction = $parts[$i + 1];
+                break;
+            }
+        }
+    }
+
+    $setup = new SetupController();
+    match ($setupAction) {
+        'testConnection' => $setup->testConnection(),
+        'save'           => $setup->save(),
+        default          => $setup->index(),
+    };
+    exit;
+}
+// ── Fin detección de primera ejecución ─────────────────────────────────────
+
+
 require_once 'config/config.php';
+
 
 // Iniciar sesión para el manejador global
 if (session_status() === PHP_SESSION_NONE) {
@@ -42,12 +75,19 @@ $id = isset($_GET['id']) ? $_GET['id'] : null;
 if (!isset($_GET['controller'])) {
     // Basic root string parsing, removing query strings
     $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    // Remove base directory (assuming the app lives in /soleipharmav2/)
-    $basePath = '/soleipharmav2/';
+    // Detectar el basePath dinámicamente según el nombre de la carpeta del proyecto
+    // Funciona para /soleipharmav2/, /soleipharmav2leon/, o cualquier otro nombre
+    $appFolder = basename(__DIR__);           // ej: "soleipharmav2" o "soleipharmav2leon"
+    $basePath  = '/' . $appFolder . '/';
+
     if (strpos($requestUri, $basePath) === 0) {
         $route = substr($requestUri, strlen($basePath));
     } else {
         $route = ltrim($requestUri, '/');
+        // Quitar el folder si aparece como primer segmento (evita tomarlo como controlador)
+        if (strpos($route, $appFolder . '/') === 0) {
+            $route = substr($route, strlen($appFolder) + 1);
+        }
     }
 
     if (!empty($route) && $route !== 'index.php') {
@@ -84,9 +124,12 @@ if (file_exists($controllerFile)) {
             $obj->$action();
         }
     } else {
-        echo "<a href='/soleipharmav2/' role='button'>Regresar</a>";
+        $appFolder = basename(__DIR__);
+        echo "<a href='/{$appFolder}/' role='button'>Regresar</a>";
         die("<br>No se encontró la ruta solicitada ({$controller}/{$action}).");
     }
 } else {
-    die("El controlador '{$controllerName}' no existe.");
+    $appFolder = basename(__DIR__);
+    echo "<a href='/{$appFolder}/' role='button'>Regresar</a>";
+    die("<br>El controlador '{$controllerName}' no existe.");
 }

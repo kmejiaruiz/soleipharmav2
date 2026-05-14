@@ -16,11 +16,27 @@ class AuthController extends BaseController
             session_start();
         }
     }
+    /**
+     * Muestra la página de login/registro (vista completa, sin modal).
+     */
+    public function showLogin()
+    {
+        // Si ya hay sesión activa, redirigir al panel correspondiente
+        if (isset($_SESSION['user'])) {
+            if ($_SESSION['user']['role'] === 'cajero') {
+                header("Location: " . APP_BASE . "/cash/index");
+            } else {
+                header("Location: " . APP_BASE . "/product/index");
+            }
+            exit;
+        }
+        require_once __DIR__ . '/../views/auth_page.php';
+        exit;
+    }
+
     public function loginForm()
     {
-        // En esta app, el login es un modal en el header, pero en caso de acceso directo:
-        header("Location: /soleipharmav2/index.php?show_login=1");
-        // O renderizamos una mini vista si prefieres, aunque index maneja openLogin
+        header("Location: " . APP_BASE . "/auth/showLogin");
         exit;
     }
 
@@ -43,7 +59,7 @@ class AuthController extends BaseController
                 // Verificar si el usuario está bloqueado
                 if ($user['is_locked'] == 1) {
                     $error = "Tu usuario está bloqueado. Por favor, ponte en contacto con un superadmin para reactivarlo.";
-                    $this->render('login_modal', ['error' => $error, 'modalAlert' => true]);
+                    $this->renderAuthPage($error, true);
                     return;
                 }
 
@@ -51,7 +67,7 @@ class AuthController extends BaseController
                     // --- VERIFICACIÓN DE ESTADO ACTIVO ---
                     if (($user['status'] ?? 'active') === 'disabled') {
                         $error = "Póngase en contacto con su administrador de TI ya que ocurrió un problema.";
-                        $this->render('login_modal', ['error' => $error, 'modalAlert' => true]);
+                        $this->renderAuthPage($error, true);
                         return;
                     }
 
@@ -73,7 +89,7 @@ class AuthController extends BaseController
 
                     if ($cleanSysBranch !== '' && $cleanUserBranch !== '' && $cleanUserBranch !== $cleanSysBranch) {
                         $error = "No tienes privilegios para iniciar sesión. Esta instancia pertenece a " . htmlspecialchars($sysBranch) . ", pero tu cuenta está registrada en " . htmlspecialchars($userBranch) . ".";
-                        $this->render('login_modal', ['error' => $error, 'modalAlert' => true]);
+                        $this->renderAuthPage($error, true);
                         return;
                     }
                     // --- FIN RESTRICCIÓN DE SUCURSAL ---
@@ -103,10 +119,18 @@ class AuthController extends BaseController
                 ];
 
                     // Redirigir según rol
-                    if ($user['role'] === 'cajero') {
-                        header("Location: /soleipharmav2/cash/index");
-                    } else {
-                        header("Location: /soleipharmav2/product/index");
+                    switch ($user['role']) {
+                        case 'superadmin':
+                        case 'admin':
+                        case 'user':
+                            header("Location: " . APP_BASE . "/admin/index");
+                            break;
+                        case 'cajero':
+                            header("Location: " . APP_BASE . "/cash/index");
+                            break;
+                        default:
+                            header("Location: " . APP_BASE . "/admin/index");
+                            break;
                     }
                     exit;
                 } else {
@@ -117,24 +141,24 @@ class AuthController extends BaseController
                     if ($attempts >= 3) {
                         $this->userModel->lockUser($username);
                         $error = "Tu usuario está bloqueado. Por favor, ponte en contacto con un superadmin para reactivarlo.";
-                        $this->render('login_modal', ['error' => $error, 'modalAlert' => true]);
+                        $this->renderAuthPage($error, true);
                         return;
                     } else {
                         $error = "Contraseña incorrecta. Si se ingresa 3 veces la contraseña incorrecta el usuario se bloquea. (Llevas {$attempts} intentos fallidos).";
-                        $this->render('login_modal', ['error' => $error, 'modalAlert' => true]);
+                        $this->renderAuthPage($error, true);
                         return;
                     }
                 }
             } else {
                 // El usuario no existe en la base de datos
                 $error = "Credenciales inválidas";
-                $this->render('login_modal', ['error' => $error]);
+                $this->renderAuthPage($error);
                 return;
             }
         }
 
         // Si no es POST, simplemente abrimos el modal
-        $this->render('login_modal');
+        $this->renderAuthPage();
     }
 
 
@@ -146,7 +170,7 @@ class AuthController extends BaseController
         $cartController->clear();
 
         session_destroy();
-        header("Location: /soleipharmav2/product/index");
+        header("Location: " . APP_BASE . "/auth/showLogin");
     }
 
 
@@ -183,11 +207,11 @@ class AuthController extends BaseController
             $_SESSION['registered_username'] = $username;
 
             $_SESSION['flash'] = "¡Registro exitoso!";
-            header("Location: /soleipharmav2/product/index");
+            header("Location: " . APP_BASE . "/product/index");
             exit;
         } else {
             $_SESSION['flash'] = "Error al registrar usuario.";
-            header("Location: /soleipharmav2/auth/showRegister");
+            header("Location: " . APP_BASE . "/auth/showRegister");
             exit;
         }
     }
@@ -350,6 +374,15 @@ class AuthController extends BaseController
         }
 
         $this->renderBare('reset_password', ['token' => $token, 'tokenUsername' => $tokenUsername]);
+    }
+
+    /**
+     * Helper: renderiza la página de autenticación completa (login/register/forgot).
+     */
+    private function renderAuthPage($error = null, $modalAlert = false)
+    {
+        require_once __DIR__ . '/../views/auth_page.php';
+        exit;
     }
 }
 ?>

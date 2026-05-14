@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // views/admin/entry_summary.php
 // Variables: $entry, $items, $qtyDiffs, $hasCostDebitNote, $hasQtyDebitNote,
 //            $invoiceTotal, $systemTotal, $receptionDate, $userName, $orderId
@@ -10,8 +10,8 @@
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Resumen de Entrada — Pedido #<?= htmlspecialchars($orderId ?? '') ?></li>
                 </ol>
             </div>
@@ -56,7 +56,7 @@
                             <strong>Atención: Se ha generado una Nota de Débito unificada</strong><br>
                             Existen diferencias ya sea por costos (factura > sistema) o por cantidades recibidas.
                             <br>
-                            <a href="/soleipharmav2/order/debitNote?id=<?= $entry['id'] ?>"
+                            <a href="<?= APP_BASE ?>/order/debitNote?id=<?= $entry['id'] ?>"
                                target="_blank" class="btn btn-warning btn-sm mt-2">
                                <i class="fas fa-file-pdf"></i> Ver Nota de Débito Unificada
                             </a>
@@ -172,14 +172,14 @@
 
     <!-- Botones -->
     <div class="mb-4 d-flex align-items-center">
-        <a href="/soleipharmav2/order/goodsEntryReport?id=<?= $orderId ?>"
+        <a href="<?= APP_BASE ?>/order/goodsEntryReport?id=<?= $orderId ?>"
            target="_blank" class="btn btn-primary mr-2">
             <i class="fas fa-file-pdf"></i> Ver Boleta de Recepción (PDF)
         </a>
         <button onclick="window.print()" class="btn btn-secondary mr-2">
             <i class="fas fa-print"></i> Imprimir Esta Página
         </button>
-        <a href="/soleipharmav2/order/index" class="btn btn-outline-secondary">
+        <a href="<?= APP_BASE ?>/order/index" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left"></i> Volver a Pedidos
         </a>
     </div>

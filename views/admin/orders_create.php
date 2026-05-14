@@ -1,4 +1,4 @@
-<!-- views/admin/orders_create.php -->
+﻿<!-- views/admin/orders_create.php -->
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -7,8 +7,8 @@
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/order/index">Pedidos</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/order/index">Pedidos</a></li>
                     <li class="breadcrumb-item active">Nuevo Pedido</li>
                 </ol>
             </div>
@@ -42,7 +42,7 @@
                         </button>
                     </div>
                     <div class="col-md-3">
-                        <a href="/soleipharmav2/supplier/create" class="btn btn-outline-secondary btn-block" target="_blank">
+                        <a href="<?= APP_BASE ?>/supplier/create" class="btn btn-outline-secondary btn-block" target="_blank">
                             <i class="fas fa-plus"></i> Nuevo Proveedor
                         </a>
                     </div>
@@ -57,7 +57,7 @@
 
         <!-- Paso 2: Tabla de Productos del proveedor -->
         <div id="step2" style="display:none">
-            <form id="orderCreateForm" action="/soleipharmav2/order/store" method="POST">
+            <form id="orderCreateForm" action="<?= APP_BASE ?>/order/store" method="POST">
                 <input type="hidden" name="supplier_id" id="hiddenSupplierId">
 
                 <div class="card">
@@ -120,10 +120,10 @@ $(document).ready(function() {
 
         $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
 
-        $.getJSON('/soleipharmav2/supplier/products?id=' + supplierId, function(products) {
+        $.getJSON('<?= APP_BASE ?>/supplier/products?id=' + supplierId, function(products) {
             $('#productsBody').empty();
             if (!products.length) {
-                $('#productsBody').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene productos en su catálogo. <a href="/soleipharmav2/supplier/catalog?id=' + supplierId + '" target="_blank">Agregar productos</a></td></tr>');
+                $('#productsBody').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene productos en su catálogo. <a href="<?= APP_BASE ?>/supplier/catalog?id=' + supplierId + '" target="_blank">Agregar productos</a></td></tr>');
                 $('#step2').slideDown();
                 return;
             }
@@ -191,7 +191,7 @@ $(document).ready(function() {
         $.post($(this).attr('action'), $(this).serialize(), function(r) {
             if (r.success) {
                 Swal.fire({ icon: 'success', title: 'Pedido Creado', text: r.message })
-                    .then(() => window.location.href = '/soleipharmav2/order/index');
+                    .then(() => window.location.href = '<?= APP_BASE ?>/order/index');
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: r.message });
             }

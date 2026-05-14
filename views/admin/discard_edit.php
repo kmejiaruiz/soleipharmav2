@@ -1,12 +1,12 @@
-<div class="row mb-2">
+﻿<div class="row mb-2">
     <div class="col-sm-6">
         <h1>Corregir Solicitud de Descarte #<?= htmlspecialchars($request['id']) ?></h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/soleipharmav2/discard/myHistory">Mis Descartes</a></li>
+            <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/discard/myHistory">Mis Descartes</a></li>
             <li class="breadcrumb-item active">Editar Descarte</li>
         </ol>
     </div>
@@ -25,7 +25,7 @@
                 <br><strong>Motivo / Instrucción:</strong> <span class="text-danger"><?= htmlspecialchars($request['decision_reason']) ?></span>
             </p>
             <hr>
-            <form id="edit-discard-form" action="/soleipharmav2/discard/editRequest" method="POST">
+            <form id="edit-discard-form" action="<?= APP_BASE ?>/discard/editRequest" method="POST">
                 <input type="hidden" name="id" value="<?= htmlspecialchars($request['id']) ?>">
                 
                 <div class="mb-3">
@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="d-flex justify-content-between">
-                    <a href="/soleipharmav2/discard/myHistory" class="btn btn-secondary">Cancelar</a>
+                    <a href="<?= APP_BASE ?>/discard/myHistory" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" id="btn-submit-edit" class="btn btn-primary">
                         <i class="fas fa-paper-plane"></i> Reenviar Solicitud
                     </button>
@@ -83,7 +83,7 @@
                             timer: 2000,
                             showConfirmButton: false
                         }).then(() => {
-                            window.location.href = '/soleipharmav2/discard/myHistory';
+                            window.location.href = '<?= APP_BASE ?>/discard/myHistory';
                         });
                     } else {
                         Swal.fire('Error', res.message, 'error');

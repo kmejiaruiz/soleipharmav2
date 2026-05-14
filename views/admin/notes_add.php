@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Se espera que el controlador pase la variable $nextNoteNumber (número de nota autogenerado)
 ?>
 <section class="content-header">
@@ -10,7 +10,7 @@
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
                     <li class="breadcrumb-item"><a href="index.php">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Dashboard</a></li>
                     <li class="breadcrumb-item active">Crear Nota de Crédito/Débito</li>
                 </ol>
             </div>
@@ -19,7 +19,7 @@
 </section>
 <section class="content">
     <div class="container-fluid">
-        <form id="notesForm" action="/soleipharmav2/notes/save" method="post">
+        <form id="notesForm" action="<?= APP_BASE ?>/notes/save" method="post">
             <div class="form-group">
                 <label>Número de Nota</label>
                 <input type="text" name="note_number" class="form-control"
@@ -56,7 +56,7 @@
             <input type="hidden" name="confirm_username" id="confirmUsername">
             <input type="hidden" name="confirm_password" id="confirmPassword">
             <button type="submit" class="btn btn-primary">Crear Nota</button>
-            <a href="/soleipharmav2/notes/index" class="btn btn-secondary">Cancelar</a>
+            <a href="<?= APP_BASE ?>/notes/index" class="btn btn-secondary">Cancelar</a>
         </form>
     </div>
 </section>
@@ -105,7 +105,7 @@
                                 title: 'Nota creada',
                                 text: response.message
                             }).then(() => {
-                                window.location.href = "/soleipharmav2/notes/index";
+                                window.location.href = "<?= APP_BASE ?>/notes/index";
                             });
                         } else {
                             // Si las credenciales son incorrectas u ocurre otro error, se muestra el error sin reiniciar el formulario

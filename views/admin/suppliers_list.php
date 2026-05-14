@@ -1,4 +1,4 @@
-<?php // views/admin/suppliers_list.php ?>
+﻿<?php // views/admin/suppliers_list.php ?>
 <section class="content-header">
     <div class="row mb-2">
         <div class="col-sm-6">
@@ -6,7 +6,7 @@
         </div>
         <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-                <li class="breadcrumb-item"><a href="/soleipharmav2/admin/index">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="<?= APP_BASE ?>/admin/index">Inicio</a></li>
                 <li class="breadcrumb-item active">Proveedores</li>
             </ol>
         </div>
@@ -17,7 +17,7 @@
     <div class="container-fluid">
         <?php if ($isSuperAdmin): ?>
         <div class="mb-3">
-            <a href="/soleipharmav2/supplier/create" class="btn btn-success">
+            <a href="<?= APP_BASE ?>/supplier/create" class="btn btn-success">
                 <i class="fas fa-plus"></i> Nuevo Proveedor
             </a>
         </div>
@@ -60,11 +60,11 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <a href="/soleipharmav2/supplier/catalog?id=<?= $s['id'] ?>" class="btn btn-info btn-sm" title="Catálogo">
+                                <a href="<?= APP_BASE ?>/supplier/catalog?id=<?= $s['id'] ?>" class="btn btn-info btn-sm" title="Catálogo">
                                     <i class="fas fa-list"></i> Catálogo
                                 </a>
                                 <?php if ($isSuperAdmin): ?>
-                                <a href="/soleipharmav2/supplier/edit?id=<?= $s['id'] ?>" class="btn btn-warning btn-sm" title="Editar">
+                                <a href="<?= APP_BASE ?>/supplier/edit?id=<?= $s['id'] ?>" class="btn btn-warning btn-sm" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button class="btn btn-<?= $s['active'] ? 'secondary' : 'success' ?> btn-sm btn-toggle"
@@ -82,7 +82,7 @@
         </div>
         <?php else: ?>
         <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> No hay proveedores registrados. <a href="/soleipharmav2/supplier/create">Crea el primero</a>.
+            <i class="fas fa-info-circle"></i> No hay proveedores registrados. <a href="<?= APP_BASE ?>/supplier/create">Crea el primero</a>.
         </div>
         <?php endif; ?>
     </div>
@@ -102,7 +102,7 @@ $(document).ready(function() {
     $(document).on('click', '.btn-toggle', function() {
         const id = $(this).data('id');
         const btn = $(this);
-        $.post('/soleipharmav2/supplier/toggle', { id: id }, function(r) {
+        $.post('<?= APP_BASE ?>/supplier/toggle', { id: id }, function(r) {
             if (r.success) {
                 const label = r.active ? 'Activo' : 'Inactivo';
                 const badgeCls = r.active ? 'badge-success' : 'badge-secondary';
