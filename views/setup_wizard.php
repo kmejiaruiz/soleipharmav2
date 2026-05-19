@@ -1,3 +1,9 @@
+<?php
+// Leer el error de BD de la sesión ANTES de enviar cualquier HTML
+if (session_status() === PHP_SESSION_NONE) session_start();
+$setupDbError = $_SESSION['setup_db_error'] ?? '';
+unset($_SESSION['setup_db_error']);
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -515,7 +521,17 @@
 
         <!-- ── PASO 1: Bienvenida ── -->
         <div class="step-panel active" id="panel-1">
-                <div class="welcome-graphic">
+            <?php if (!empty($setupDbError)): ?>
+            <div style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.4);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;">
+                <span style="font-size:1.3rem;flex-shrink:0;">&#9888;</span>
+                <div>
+                    <strong style="color:#fca5a5;display:block;margin-bottom:4px;">No se pudo conectar a la base de datos</strong>
+                    <span style="color:rgba(252,165,165,0.8);font-size:0.83rem;line-height:1.5;"><?= htmlspecialchars($setupDbError) ?><br>
+                    Reconfigura la conexión a continuación para volver a inicializar el sistema.</span>
+                </div>
+            </div>
+            <?php endif; ?>
+            <div class="welcome-graphic">
                 <div class="big-icon">&#128138;</div>
                 <h3>Bienvenido al Sistema</h3>
                 <p>

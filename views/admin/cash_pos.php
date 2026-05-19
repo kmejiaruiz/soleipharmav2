@@ -1,4 +1,4 @@
-﻿<?php // views/admin/cash_pos.php ?>
+<?php // views/admin/cash_pos.php ?>
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2 align-items-center">
@@ -168,6 +168,10 @@
 </section>
 
 <script>
+// ── Base URL — rendered server-side per branch instance ───────────────────────
+// This ensures León uses /soleipharmav2leon and Managua uses /soleipharmav2
+const _POS_BASE = '<?= APP_BASE ?>';  // e.g. /soleipharmav2leon
+
 // ── Cart state ────────────────────────────────────────────────────────────────
 let cart = {}; // { productId: { id, name, price, qty, stock } }
 let searchTimer = null;
@@ -186,7 +190,8 @@ document.getElementById('posSearch').addEventListener('input', function() {
     document.getElementById('searchNoResults').style.display = 'none';
 
     searchTimer = setTimeout(() => {
-        fetch(`/soleipharmav2/cash/posSearch?q=${encodeURIComponent(q)}`)
+        fetch(`${_POS_BASE}/cash/posSearch?q=${encodeURIComponent(q)}`)
+
             .then(r => r.json())
             .then(products => {
                 document.getElementById('searchLoading').style.display = 'none';
@@ -223,7 +228,7 @@ document.getElementById('posSearch').addEventListener('keydown', function(e) {
         clearTimeout(searchTimer);
         const q = this.value.trim();
         if (q.length >= 2) {
-            fetch(`/soleipharmav2/cash/posSearch?q=${encodeURIComponent(q)}`)
+            fetch(`${_POS_BASE}/cash/posSearch?q=${encodeURIComponent(q)}`)
                 .then(r => r.json())
                 .then(products => {
                     if (products.length === 1) {
@@ -443,7 +448,7 @@ document.getElementById('btnProcessSale').addEventListener('click', async functi
         fd.append('items[]', JSON.stringify({ id, qty: cart[id].qty, price: cart[id].price }));
     });
 
-    const res  = await fetch('<?= APP_BASE ?>/cash/posSale', { method: 'POST', body: fd });
+    const res  = await fetch(`${_POS_BASE}/cash/posSale`, { method: 'POST', body: fd });
     const data = await res.json();
 
     this.disabled = false;
@@ -652,7 +657,7 @@ document.getElementById('btnReprintAuthConfirmPOS').addEventListener('click', as
     fd.append('password', password);
 
     try {
-        const res  = await fetch('<?= APP_BASE ?>/cash/reprintAuth', { method: 'POST', body: fd });
+        const res  = await fetch(`${_POS_BASE}/cash/reprintAuth`, { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.success) {
@@ -685,7 +690,7 @@ async function loadCurrentSalesPOS() {
     document.getElementById('rpCurrentTablePOS').style.display   = 'none';
 
     try {
-        const res  = await fetch(`/soleipharmav2/cash/reprintSales?session_id=${posSessionId}`);
+        const res  = await fetch(`${_POS_BASE}/cash/reprintSales?session_id=${posSessionId}`);
         const data = await res.json();
         document.getElementById('rpCurrentLoadingPOS').style.display = 'none';
         if (!data.length) { document.getElementById('rpCurrentEmptyPOS').style.display = 'block'; return; }
@@ -715,7 +720,7 @@ async function loadHistSalesPOS() {
     document.getElementById('rpHistTablePOS').style.display   = 'none';
 
     try {
-        let url = `/soleipharmav2/cash/reprintSales?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
+        let url = `${_POS_BASE}/cash/reprintSales?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
         if (user) url += `&search_user=${encodeURIComponent(user)}`;
         const res  = await fetch(url);
         const data = await res.json();

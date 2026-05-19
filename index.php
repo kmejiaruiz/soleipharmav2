@@ -37,6 +37,29 @@ if (!file_exists(__DIR__ . '/config/app.json')) {
 
 require_once 'config/config.php';
 
+// ── Detectar fallo de conexión a la BD ───────────────────────────────────────
+// Si config.php cargó app.json pero no pudo conectar (ej: BD eliminada,
+// servidor nuevo, credenciales cambiadas), redirigir al wizard de setup.
+if (!empty($GLOBALS['_setup_required'])) {
+    $appJsonPath = __DIR__ . '/config/app.json';
+    $errorMsg    = $GLOBALS['_setup_error'] ?? 'Error de conexión a la base de datos.';
+
+    // Guardar el error en sesión para mostrarlo en el wizard
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $_SESSION['setup_db_error'] = $errorMsg;
+
+    // Eliminar el app.json inválido para que el wizard arranque limpio
+    if (file_exists($appJsonPath)) {
+        @unlink($appJsonPath);
+    }
+
+    // Redirigir al wizard de configuración inicial
+    $appBase = '/' . basename(__DIR__);
+    header('Location: ' . $appBase . '/');
+    exit;
+}
+// ── Fin detección de fallo de BD ────────────────────────────────────────────
+
 
 // Iniciar sesión para el manejador global
 if (session_status() === PHP_SESSION_NONE) {

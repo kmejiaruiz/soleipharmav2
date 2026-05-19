@@ -5,6 +5,257 @@ if (session_status() === PHP_SESSION_NONE) {
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// ── Validación de sucursal: detecta usuario de otra instancia ─────────────────
+// Si BRANCH está configurado y el usuario tiene branch, deben coincidir.
+if (
+    defined('BRANCH') && BRANCH !== ''
+    && isset($_SESSION['user']['id'])
+    && isset($_SESSION['user']['branch'])
+    && $_SESSION['user']['branch'] !== BRANCH
+) {
+    // Capturar datos ANTES de destruir la sesión
+    $_bm_userName  = htmlspecialchars($_SESSION['user']['first_name'] . ' ' . $_SESSION['user']['last_name']);
+    $_bm_userBr    = htmlspecialchars($_SESSION['user']['branch']);
+    $_bm_thisBr    = htmlspecialchars(BRANCH);
+    $_bm_loginUrl  = defined('APP_BASE') ? APP_BASE : '';
+
+    // Destruir sesión server-side inmediatamente
+    session_unset();
+    session_destroy();
+
+    // Emitir página standalone con MicroModal de error
+    header('Content-Type: text/html; charset=UTF-8');
+    ?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Acceso incorrecto — SoleiPharma</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset & base ───────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #111111;
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        /* ── MicroModal core ────────────────────────────────────── */
+        .micromodal-slide { display: none; }
+        .micromodal-slide.is-open { display: block; }
+        .micromodal-slide[aria-hidden="false"] .modal__overlay  { animation: mmfadeIn  .28s cubic-bezier(0,0,.2,1); }
+        .micromodal-slide[aria-hidden="false"] .modal__container { animation: mmslideIn .28s cubic-bezier(0,0,.2,1); }
+        .micromodal-slide[aria-hidden="true"]  .modal__overlay  { animation: mmfadeOut  .28s cubic-bezier(0,0,.2,1); }
+        .micromodal-slide[aria-hidden="true"]  .modal__container { animation: mmslideOut .28s cubic-bezier(0,0,.2,1); }
+        .micromodal-slide .modal__container,
+        .micromodal-slide .modal__overlay { will-change: transform; }
+        @keyframes mmfadeIn   { from { opacity:0 } to { opacity:1 } }
+        @keyframes mmfadeOut  { from { opacity:1 } to { opacity:0 } }
+        @keyframes mmslideIn  { from { transform:translateY(-18px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+        @keyframes mmslideOut { from { transform:translateY(0); opacity:1 } to { transform:translateY(-18px); opacity:0 } }
+
+        /* ── Overlay ────────────────────────────────────────────── */
+        .modal__overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.65);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(3px);
+        }
+
+        /* ── Container ──────────────────────────────────────────── */
+        .modal__container {
+            background: #ffffff;
+            border-radius: 6px;
+            max-width: 420px;
+            width: 92%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+            overflow: hidden;
+        }
+
+        /* ── Header — negro corporativo ─────────────────────────── */
+        .modal__header {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 3px solid #333;
+        }
+        .modal__header-icon {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,.08);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-size: .95rem;
+        }
+        .modal__title {
+            color: #fff;
+            font-size: .95rem;
+            font-weight: 700;
+            letter-spacing: .3px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        /* ── Content ────────────────────────────────────────────── */
+        .modal__content {
+            padding: 28px 28px 20px;
+        }
+        .modal__content .info-block {
+            background: #f7f7f7;
+            border: 1px solid #e4e4e4;
+            border-radius: 5px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            font-size: .92rem;
+            color: #1a1a1a;
+            line-height: 1.7;
+        }
+        .modal__content .info-block strong {
+            color: #000;
+            font-weight: 700;
+        }
+        .modal__content .info-block .label {
+            color: #888;
+            font-size: .78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .modal__content .info-row {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .modal__content .info-row:last-child { border-bottom: none; }
+        .modal__content .info-row .ri { color: #999; width: 14px; flex-shrink:0; margin-top:3px; }
+        .modal__note {
+            font-size: .82rem;
+            color: #666;
+            text-align: center;
+            line-height: 1.6;
+            padding-top: 4px;
+        }
+        .modal__note i { margin-right: 4px; color: #999; }
+
+        /* ── Footer ─────────────────────────────────────────────── */
+        .modal__footer {
+            padding: 16px 24px;
+            background: #f5f5f5;
+            border-top: 1px solid #e4e4e4;
+            display: flex;
+            justify-content: center;
+        }
+        .modal__btn {
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 11px 32px;
+            font-size: .9rem;
+            font-weight: 600;
+            letter-spacing: .3px;
+            cursor: pointer;
+            transition: background .15s;
+            min-width: 200px;
+            font-family: inherit;
+        }
+        .modal__btn:hover { background: #333; }
+    </style>
+</head>
+<body>
+
+<!-- MicroModal de error de sucursal -->
+<div class="modal micromodal-slide" id="modalBranchError" aria-hidden="true">
+  <div class="modal__overlay" tabindex="-1">
+    <div class="modal__container" role="alertdialog" aria-modal="true" aria-labelledby="modalBranchErrorTitle">
+
+      <!-- Header negro corporativo -->
+      <div class="modal__header">
+        <div class="modal__header-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h5 class="modal__title" id="modalBranchErrorTitle">Acceso Incorrecto &mdash; Sucursal</h5>
+      </div>
+
+      <!-- Cuerpo -->
+      <div class="modal__content">
+        <div class="info-block">
+          <div class="info-row">
+            <i class="fas fa-user ri"></i>
+            <div>
+              <span class="label">Usuario</span>
+              <strong><?= $_bm_userName ?></strong>
+            </div>
+          </div>
+          <div class="info-row">
+            <i class="fas fa-building ri"></i>
+            <div>
+              <span class="label">Sucursal asignada</span>
+              <strong><?= $_bm_userBr ?></strong>
+            </div>
+          </div>
+          <div class="info-row">
+            <i class="fas fa-ban ri"></i>
+            <div>
+              <span class="label">Instancia accedida</span>
+              <strong><?= $_bm_thisBr ?></strong>
+            </div>
+          </div>
+        </div>
+        <p class="modal__note">
+          <i class="fas fa-lock"></i>
+          La sesión ha sido cerrada por seguridad.<br>
+          Ingrese con un usuario válido para esta sucursal.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal__footer">
+        <button id="btnBranchErrorOk" class="modal__btn">
+          <i class="fas fa-sign-in-alt"></i>&nbsp; Ir al Inicio de Sesión
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+<script>
+(function() {
+    var loginUrl = '<?= $_bm_loginUrl ?>';
+    document.addEventListener('DOMContentLoaded', function() {
+        MicroModal.init();
+        MicroModal.show('modalBranchError', {
+            disableScroll: true,
+            disableFocus: false,
+            // No permitir cerrar con Esc ni click en overlay — el usuario DEBE hacer clic en el botón
+            onClose: function() { window.location.replace(loginUrl); }
+        });
+        document.getElementById('btnBranchErrorOk').addEventListener('click', function() {
+            window.location.replace(loginUrl);
+        });
+    });
+})();
+</script>
+
+</body>
+</html>
+<?php
+    exit();
+}
+$_branchMismatch = false;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -503,4 +754,5 @@ if (empty($_SESSION['csrf_token'])) {
         </aside>
 
         <!-- Content Wrapper. Contains page content -->
-        <div class="content-wrapper">
+
+        <div class="content-wrapper">

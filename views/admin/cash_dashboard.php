@@ -40,6 +40,9 @@ $isPendingClose = ($session['status'] === 'pending_close');
                 <span class="badge badge-warning p-2 ml-2" style="font-size:13px;">
                     <i class="fas fa-hourglass-half"></i> Esperando cierre por administrador
                 </span>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-warning ml-2" title="Refrescar estado de la caja">
+                    <i class="fas fa-sync-alt"></i> Refrescar
+                </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -504,7 +507,7 @@ async function loadCurrentSales() {
     document.getElementById('rpCurrentTable').style.display   = 'none';
 
     try {
-        const res  = await fetch(`/soleipharmav2/cash/reprintSales?session_id=${currentSessionId}`);
+        const res  = await fetch(`<?= APP_BASE ?>/cash/reprintSales?session_id=${currentSessionId}`);
         const data = await res.json();
 
         document.getElementById('rpCurrentLoading').style.display = 'none';
@@ -546,7 +549,7 @@ async function loadHistSales() {
     document.getElementById('rpHistTable').style.display   = 'none';
 
     try {
-        let url = `/soleipharmav2/cash/reprintSales?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
+        let url = `<?= APP_BASE ?>/cash/reprintSales?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
         if (user) url += `&search_user=${encodeURIComponent(user)}`;
 
         const res  = await fetch(url);

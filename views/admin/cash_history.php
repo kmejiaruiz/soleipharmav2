@@ -18,11 +18,17 @@
 <div class="container-fluid">
 
     <!-- Current cash balance banner -->
-    <?php if ($openSession && $currentCash !== null): ?>
-    <div class="alert alert-success d-flex align-items-center justify-content-between">
+    <?php if ($openSession && $currentCash !== null):
+        $isBannerPending = ($openSession['status'] === 'pending_close');
+    ?>
+    <div class="alert <?= $isBannerPending ? 'alert-warning' : 'alert-success' ?> d-flex align-items-center justify-content-between flex-wrap gap-2">
         <span>
-            <i class="fas fa-lock-open"></i>
-            <strong>Caja Abierta</strong> &mdash; por
+            <i class="fas <?= $isBannerPending ? 'fa-hourglass-half' : 'fa-lock-open' ?>"></i>
+            <?php if ($isBannerPending): ?>
+                <strong>Caja en proceso de cierre</strong> &mdash; por
+            <?php else: ?>
+                <strong>Caja Abierta</strong> &mdash; por
+            <?php endif; ?>
             <strong><?= htmlspecialchars(ucwords(strtolower($openSession['opener_name']))) ?></strong>
             desde <?php
                 $dtO = new DateTime($openSession['opened_at']);
@@ -30,8 +36,15 @@
                 echo $dtO->format('d/m/Y H:i');
             ?>
         </span>
-        <span style="font-size:1.3em;font-weight:700;">
-            Efectivo en caja: C$ <?= number_format($currentCash, 2) ?>
+        <span class="d-flex align-items-center gap-2">
+            <?php if ($isBannerPending): ?>
+            <span class="badge badge-warning p-2" style="font-size:12px;">
+                <i class="fas fa-lock"></i> POR CERRAR — Esperando administrador
+            </span>
+            <?php endif; ?>
+            <span style="font-size:1.1em;font-weight:700;">
+                Efectivo en caja: C$ <?= number_format($currentCash, 2) ?>
+            </span>
         </span>
     </div>
     <?php else: ?>
