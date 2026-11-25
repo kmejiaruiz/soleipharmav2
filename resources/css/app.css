@@ -1,0 +1,169 @@
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ocultar flechas por defecto en inputs de número (Chrome, Safari, Edge, Opera) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Ocultar flechas en Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ESTILOS GLOBALES DE IMPRESIÓN — FORMATO IMPRESORA TÉRMICA & CRYSTAL REPORTS
+   ════════════════════════════════════════════════════════════════════════════ */
+@media print {
+    /* Ocultar TODO excepto los contenedores de impresión explícitos */
+    body > *                { display: none !important; }
+    .thermal-receipt        { display: block !important; }
+    .crystal-report         { display: block !important; }
+
+    /* Configuración de página térmica 80mm */
+    @page {
+        size: auto;
+        margin: 5mm;
+    }
+
+    /* Estilos base del ticket térmico imprimible */
+    .thermal-receipt {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 74mm !important;
+        max-width: 74mm !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+        padding: 2mm !important;
+        z-index: 99999 !important;
+    }
+
+    /* Estilos base de Crystal Reports (Formato Hoja Carta / A4 Enterprise) */
+    .crystal-report {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 11px !important;
+        line-height: 1.3 !important;
+        padding: 8mm !important;
+        z-index: 99999 !important;
+    }
+
+    /* Variante 58mm */
+    .thermal-58mm {
+        width: 52mm !important;
+        max-width: 52mm !important;
+    }
+
+    /* Utilidades internas del ticket */
+    .thermal-receipt .t-center  { text-align: center; }
+    .thermal-receipt .t-right   { text-align: right; }
+    .thermal-receipt .t-bold    { font-weight: bold; }
+    .thermal-receipt .t-lg      { font-size: 13px; font-weight: bold; }
+    .thermal-receipt .t-xl      { font-size: 16px; font-weight: 900; }
+    .thermal-receipt .t-sm      { font-size: 9px; }
+    .thermal-receipt .t-divider { border: none; border-top: 1px dashed #000; margin: 3px 0; }
+    .thermal-receipt .t-double  { border-top: 2px solid #000; margin: 3px 0; }
+    .thermal-receipt .t-row     { display: flex; justify-content: space-between; padding: 1px 0; }
+    .thermal-receipt .t-row-3   { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; padding: 1px 0; }
+    .thermal-receipt .t-total   { font-weight: 900; font-size: 13px; }
+
+    /* Ocultar botones de print/cerrar dentro del reporte */
+    .no-print { display: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS — animación de entrada/salida
+   ════════════════════════════════════════════════════════════════════════════ */
+.toast-enter-active  { transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.toast-leave-active  { transition: all 0.25s ease-in; }
+.toast-enter-from    { opacity: 0; transform: translateX(100%) scale(0.85); }
+.toast-leave-to      { opacity: 0; transform: translateX(110%) scale(0.9); }
+.toast-move          { transition: transform 0.3s ease; }
+
+/* ==========================================================================
+   ESCUDO Y BLOQUEADOR GLOBAL DE CLICS DURANTE NPROGRESS / PETICIONES
+   ========================================================================== */
+#solei-nprogress-shield {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647;
+    background: transparent;
+    cursor: wait !important;
+    pointer-events: all !important;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#solei-nprogress-shield.active {
+    display: block !important;
+}
+
+html.nprogress-blocking-clicks,
+html.nprogress-blocking-clicks * {
+    cursor: wait !important;
+}
+
+/* ==========================================================================
+   SCROLLBARS MODERNAS OSCURAS (EDGE, CHROME, SAFARI Y FIREFOX)
+   ========================================================================== */
+:root {
+    color-scheme: dark;
+}
+
+/* Scrollbar estilizada y oscura para toda la aplicación en Chromium (Edge, Chrome) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #030712;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.6);
+}
+
+/* Estándar moderno de Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) #030712;
+}
+
+/* En la barra lateral (sidebar) y contenedores custom-scrollbar:
+   ocultamos la barra para mantener una interfaz limpia y moderna */
+.custom-scrollbar,
+aside nav {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar,
+aside nav::-webkit-scrollbar {
+    width: 0px !important;
+    height: 0px !important;
+    display: none !important;
+}
