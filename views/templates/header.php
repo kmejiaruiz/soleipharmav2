@@ -84,7 +84,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <div class="flex items-center">
                     <a href="<?= APP_BASE ?>/index.php" class="text-white text-2xl font-bold flex items-center">
                         <!-- Imagen solo en móviles -->
-                        <img src="http://soleipharma.ct.ws/images/logo.jpg" class="w-10 h-auto md:hidden" alt="Logo">
+                        <img src="<?= APP_BASE ?>/assets/images/logo.jpg" class="w-10 h-auto md:hidden rounded-full" alt="Logo">
 
                         <!-- Texto solo en pantallas medianas o mayores -->
                         <span class="hidden md:inline">Farmacia Solei</span>

@@ -275,12 +275,12 @@ $_branchMismatch = false;
         NProgress.configure({ showSpinner: false, trickleSpeed: 80, minimum: 0.08 });
     </script>
     <style>
-        /* NProgress — por encima de todo, incluida la navbar de AdminLTE */
+        /* NProgress barra superior */
         #nprogress               { pointer-events: none; }
         #nprogress .bar          {
             background: #6f42c1 !important;
             position: fixed !important;
-            z-index: 999999 !important;
+            z-index: 99999999 !important;
             top: 0; left: 0;
             width: 100%; height: 3px;
         }
@@ -289,7 +289,19 @@ $_branchMismatch = false;
             right: 0; width: 100px; height: 100%;
             position: absolute; opacity: 1.0;
         }
+
+        /* Overlay bloqueador de clicks */
+        #solei-click-blocker {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 99999998;
+            background: transparent;
+            cursor: wait;
+        }
     </style>
+
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
     <!-- Font Awesome Icons -->
@@ -427,8 +439,26 @@ $_branchMismatch = false;
 </head>
 
 <body class="hold-transition sidebar-mini">
-    <!-- NProgress: iniciar aquí, después de que body existe -->
-    <script>NProgress.start();</script>
+    <!-- Overlay bloqueador de clicks: activo cuando NProgress está corriendo -->
+    <div id="solei-click-blocker"></div>
+    <script>
+    (function() {
+        var blocker = document.getElementById('solei-click-blocker');
+        if (typeof NProgress !== 'undefined') {
+            var _origStart = NProgress.start;
+            var _origDone  = NProgress.done;
+            NProgress.start = function() {
+                if (blocker) blocker.style.display = 'block';
+                return _origStart.apply(NProgress, arguments);
+            };
+            NProgress.done = function() {
+                if (blocker) blocker.style.display = 'none';
+                return _origDone.apply(NProgress, arguments);
+            };
+            NProgress.start();
+        }
+    })();
+    </script>
 
     <!-- Skip to main content (accesibilidad) -->
     <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
@@ -535,8 +565,8 @@ $_branchMismatch = false;
         <aside class="main-sidebar sidebar-dark-primary elevation-4" style="background-color: #343a40;"> <!-- Deep charcoal gray -->
             <!-- Brand Logo -->
             <a href="index.php" class="brand-link">
-                <img src="http://soleipharma.ct.ws/images/logo.jpg" alt="Logo"
-                    class="brand-image img-circle elevation-3" style="opacity: .8">
+                <img src="<?= APP_BASE ?>/assets/images/logo.jpg" alt="Logo"
+                    class="brand-image img-circle elevation-3" style="opacity: .9">
                 <span class="brand-text font-weight-light">Farmacia Solei</span>
             </a>
             <!-- Sidebar -->

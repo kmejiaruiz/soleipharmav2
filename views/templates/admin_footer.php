@@ -534,14 +534,73 @@
 <!-- UX Enhancements (usa Swal, MicroModal, ActionModal ya inicializados arriba) -->
 <script src="<?= APP_BASE ?>/assets/js/ux-enhancements.js"></script>
 
-<!-- ===== NPROGRESS LOADER ===== -->
+<!-- ===== NETWORK & USER ACTION INTERCEPTORS ===== -->
 <script>
+(function() {
+    'use strict';
+
+    var _activeRequests = 0;
+
+    // Interceptor global para fetch()
+    if (window.fetch) {
+        var origFetch = window.fetch;
+        window.fetch = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var url = (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '');
+            var opts = args[1] || {};
+
+            // Omitir bloqueo en búsquedas automáticas mientras se escribe en el POS
+            var isSilent = opts.silent || 
+                           url.indexOf('posSearch') !== -1 || 
+                           url.indexOf('stockAjax') !== -1;
+
+            if (!isSilent && typeof NProgress !== 'undefined') {
+                _activeRequests++;
+                if (_activeRequests === 1) {
+                    NProgress.start();
+                }
+            }
+
+            return origFetch.apply(this, args)
+                .then(function(res) {
+                    return res;
+                })
+                .finally(function() {
+                    if (!isSilent && typeof NProgress !== 'undefined') {
+                        _activeRequests = Math.max(0, _activeRequests - 1);
+                        if (_activeRequests === 0) {
+                            NProgress.done();
+                        }
+                    }
+                });
+        };
+    }
+
+    // Interceptor para jQuery $.ajax si está activo
+    if (typeof jQuery !== 'undefined') {
+        jQuery(document).ajaxStart(function() {
+            if (typeof NProgress !== 'undefined') {
+                _activeRequests++;
+                if (_activeRequests === 1) {
+                    NProgress.start();
+                }
+            }
+        }).ajaxStop(function() {
+            if (typeof NProgress !== 'undefined') {
+                _activeRequests = 0;
+                NProgress.done();
+            }
+        });
+    }
+
     // Completar NProgress cuando la página termina de cargar
     window.addEventListener('load', function () {
-        NProgress.done();
+        if (typeof NProgress !== 'undefined') {
+            NProgress.done();
+        }
     });
 
-    // Reiniciar NProgress al hacer clic en enlaces internos
+    // Reiniciar NProgress y activar shield al hacer clic en enlaces internos
     document.addEventListener('click', function (e) {
         var link = e.target.closest('a');
         if (!link || !link.href) return;
@@ -554,20 +613,31 @@
             link.hasAttribute('download') ||
             link.dataset.micromodalClose !== undefined
         ) return;
-        NProgress.start();
+        if (typeof NProgress !== 'undefined') {
+            NProgress.start();
+        }
     });
 
-    // También en formularios con method GET/POST
+    // Activar shield al enviar formularios tradicionales GET/POST
     document.addEventListener('submit', function () {
-        NProgress.start();
+        if (typeof NProgress !== 'undefined') {
+            NProgress.start();
+        }
     });
 
-    // bfcache: si el usuario usa Atrás/Adelante, detener la barra
+    // bfcache: si el usuario usa Atrás/Adelante, desbloquear
     window.addEventListener('pageshow', function (e) {
-        if (e.persisted) NProgress.done();
+        if (e.persisted) {
+            if (typeof NProgress !== 'undefined') {
+                NProgress.done();
+            } else if (window.SoleiScreenLock) {
+                window.SoleiScreenLock.unlock();
+            }
+        }
     });
+})();
 </script>
-<!-- ===== END NPROGRESS LOADER ===== -->
+<!-- ===== END NETWORK & USER ACTION INTERCEPTORS ===== -->
 
 
 </body>

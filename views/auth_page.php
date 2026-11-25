@@ -31,9 +31,72 @@ if (session_status() === PHP_SESSION_NONE) {
         window.addEventListener('load', function() { NProgress.done(); });
     </script>
     <style>
-        /* NProgress color override to match app purple */
-        #nprogress .bar { background: #6f42c1 !important; height: 3px; }
-        #nprogress .peg  { box-shadow: 0 0 10px #6f42c1, 0 0 5px #6f42c1 !important; }
+        /* NProgress — El contenedor #nprogress actúa directamente como ESCUDO TOTAL */
+        #nprogress {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 2147483646 !important;
+            pointer-events: all !important;
+            cursor: wait !important;
+            background: rgba(15, 23, 42, 0.40) !important;
+            backdrop-filter: blur(1.5px) !important;
+            -webkit-backdrop-filter: blur(1.5px) !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            touch-action: none !important;
+        }
+
+        #nprogress .bar {
+            background: #6f42c1 !important;
+            height: 4px;
+            position: fixed !important;
+            z-index: 2147483647 !important;
+            top: 0; left: 0; width: 100%;
+        }
+
+        #nprogress .peg {
+            box-shadow: 0 0 12px #6f42c1, 0 0 6px #6f42c1 !important;
+            right: 0; width: 120px; height: 100%;
+            position: absolute; opacity: 1.0;
+        }
+
+        #nprogress::after {
+            content: 'Procesando... Por favor, espere' !important;
+            position: fixed !important;
+            top: 24px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            background: #1e293b !important;
+            color: #ffffff !important;
+            padding: 9px 22px !important;
+            border-radius: 9999px !important;
+            font-size: 13.5px !important;
+            font-weight: 600 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+            z-index: 2147483647 !important;
+            pointer-events: none !important;
+            letter-spacing: 0.3px !important;
+        }
+
+        html.nprogress-busy,
+        html.nprogress-busy body {
+            cursor: wait !important;
+            user-select: none !important;
+        }
+
+        html.nprogress-busy button,
+        html.nprogress-busy input[type="submit"],
+        html.nprogress-busy a {
+            pointer-events: none !important;
+            opacity: 0.50 !important;
+            cursor: wait !important;
+        }
     </style>
     <style>
         [x-cloak] { display: none !important; }
@@ -168,7 +231,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <div class="auth-container">
         <!-- Logo & Company Name -->
         <div style="text-align:center; margin-bottom:1.5rem;">
-            <img src="http://soleipharma.ct.ws/images/logo.jpg" alt="Logo" class="logo-glow" style="margin:0 auto 0.75rem;">
+            <img src="<?= APP_BASE ?>/assets/images/logo.jpg" alt="Logo" class="logo-glow" style="margin:0 auto 0.75rem; width:72px; height:72px; border-radius:50%; object-fit:cover;">
             <h1 style="color:#e9ecef; font-size:1.6rem; font-weight:700; margin:0; letter-spacing:-0.01em;">
                 <?= defined('COMPANY_NAME') ? htmlspecialchars(COMPANY_NAME) : 'Farmacia Solei' ?>
             </h1>
@@ -405,6 +468,106 @@ if (session_status() === PHP_SESSION_NONE) {
                 });
             });
         });
+    </script>
+    <!-- ===== NPROGRESS & GLOBAL SCREEN LOCK MANAGER ===== -->
+    <script>
+    (function() {
+        'use strict';
+        var _isLocked = false;
+        var _lockTimeout = null;
+
+        function getOrCreateShield() {
+            var shield = document.getElementById('solei-screen-shield');
+            if (!shield && document.body) {
+                shield = document.createElement('div');
+                shield.id = 'solei-screen-shield';
+                shield.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(shield);
+            }
+            return shield;
+        }
+
+        function lockScreen() {
+            if (_isLocked) return;
+            _isLocked = true;
+            if (document.body) document.body.classList.add('solei-nprogress-lock');
+            var clickables = document.querySelectorAll('button:not([disabled]), input[type="submit"]:not([disabled])');
+            for (var i = 0; i < clickables.length; i++) {
+                clickables[i].setAttribute('data-solei-locked', 'true');
+                clickables[i].disabled = true;
+            }
+            var shield = getOrCreateShield();
+            if (shield) shield.style.display = 'block';
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+            clearTimeout(_lockTimeout);
+            _lockTimeout = setTimeout(function() {
+                if (_isLocked) {
+                    unlockScreen();
+                    if (typeof NProgress !== 'undefined') NProgress.done();
+                }
+            }, 20000);
+        }
+
+        function unlockScreen() {
+            if (!_isLocked) return;
+            _isLocked = false;
+            clearTimeout(_lockTimeout);
+            if (document.body) document.body.classList.remove('solei-nprogress-lock');
+            var lockedElements = document.querySelectorAll('[data-solei-locked="true"]');
+            for (var i = 0; i < lockedElements.length; i++) {
+                lockedElements[i].removeAttribute('data-solei-locked');
+                lockedElements[i].disabled = false;
+            }
+            var shield = document.getElementById('solei-screen-shield');
+            if (shield) shield.style.display = 'none';
+        }
+
+        function blockInteraction(e) {
+            if (_isLocked) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }
+
+        var blockEvents = ['click', 'dblclick', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'keydown', 'keypress', 'keyup'];
+        for (var i = 0; i < blockEvents.length; i++) {
+            window.addEventListener(blockEvents[i], blockInteraction, true);
+        }
+
+        if (typeof NProgress !== 'undefined') {
+            var origStart = NProgress.start.bind(NProgress);
+            var origDone  = NProgress.done.bind(NProgress);
+            NProgress.start = function() { var res = origStart(); lockScreen(); return res; };
+            NProgress.done = function(f) { var res = origDone(f); unlockScreen(); return res; };
+        }
+
+        if (window.fetch) {
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var args = Array.prototype.slice.call(arguments);
+                if (typeof NProgress !== 'undefined') NProgress.start();
+                return origFetch.apply(this, args).finally(function() {
+                    if (typeof NProgress !== 'undefined') NProgress.done();
+                });
+            };
+        }
+
+        if (typeof jQuery !== 'undefined') {
+            jQuery(document).ajaxStart(function() {
+                if (typeof NProgress !== 'undefined') NProgress.start();
+            }).ajaxStop(function() {
+                if (typeof NProgress !== 'undefined') NProgress.done();
+            });
+        }
+
+        document.addEventListener('submit', function () {
+            if (typeof NProgress !== 'undefined') NProgress.start();
+        });
+    })();
     </script>
 </body>
 </html>
